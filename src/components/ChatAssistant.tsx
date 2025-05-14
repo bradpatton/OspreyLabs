@@ -13,7 +13,7 @@ export default function ChatAssistant() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: 'Hi there! 👋 I\'m the Osprey Labs AI assistant. How can I help you today?',
+      content: 'Hi there! 👋 I\'m the Osprey Labs AI assistant, Theo. How can I help you today?',
     },
   ]);
   const [inputValue, setInputValue] = useState('');

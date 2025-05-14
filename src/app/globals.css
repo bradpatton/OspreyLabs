@@ -40,4 +40,26 @@
   .input {
     @apply block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm;
   }
+}
+
+/* Custom styles for the logo */
+.mask-logo {
+  mask-image: url('/images/logo.svg');
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-image: url('/images/logo.svg');
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-mode: alpha;
+  -webkit-mask-mode: alpha;
+}
+
+/* Direct logo styling with gradient */
+.logo-gradient {
+  color: transparent;
+  background: linear-gradient(to right, #0284c7, #7c3aed);
+  background-clip: text;
+  -webkit-background-clip: text;
 } 

@@ -3,14 +3,23 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-sm border-b border-gray-200">
-      <div className="container py-4 flex items-center justify-between">
+      <div className="container py-3 flex items-center justify-between">
         <Link href="/" className="flex items-center space-x-2">
+          <Image 
+            src="/images/logo.svg" 
+            alt="Osprey Labs Logo" 
+            width={30} 
+            height={30}
+            className="h-8 w-auto"
+            priority
+          />
           <span className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-secondary-600 text-transparent bg-clip-text">
             Osprey Labs
           </span>

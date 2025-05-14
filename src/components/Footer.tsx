@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -8,7 +9,14 @@ export default function Footer() {
       <div className="container py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="col-span-1 md:col-span-2">
-            <div className="flex items-center mb-6">
+            <div className="flex items-center mb-6 space-x-2">
+              <Image 
+                src="/images/logo.svg" 
+                alt="Osprey Labs Logo" 
+                width={30} 
+                height={30}
+                className="h-7 w-auto brightness-125"
+              />
               <span className="text-2xl font-bold bg-gradient-to-r from-primary-400 to-secondary-400 text-transparent bg-clip-text">
                 Osprey Labs
               </span>
