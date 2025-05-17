@@ -34,6 +34,8 @@ async function logChatMessage(threadId: string, userMessage: string, assistantRe
 
 export default function ChatAssistant() {
   const [isOpen, setIsOpen] = useState(false);
+  const [hasAutoOpened, setHasAutoOpened] = useState(false);
+  const [showInitialAnimation, setShowInitialAnimation] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
@@ -53,6 +55,69 @@ export default function ChatAssistant() {
     'location': 'Our main office is located at 123 Innovation Drive, Tech City, CA 94123. We also work remotely with clients worldwide.',
   };
 
+  // Get time-based greeting
+  const getTimeBasedGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  // Auto-open chat after 25 seconds
+  useEffect(() => {
+    if (!hasAutoOpened) {
+      const timer = setTimeout(() => {
+        setShowInitialAnimation(true);
+        
+        // Wait for animation to complete before opening chat
+        setTimeout(() => {
+          setIsOpen(true);
+          setHasAutoOpened(true);
+          
+          // Add an auto welcome message when it opens
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: 'assistant',
+              content: `${getTimeBasedGreeting()}! 👋 I noticed you're exploring our site. Do you have any questions about our services or how we can help your business?`
+            }
+          ]);
+          
+          // Play a subtle notification sound
+          try {
+            // Check if the browser supports Audio API
+            if (typeof Audio !== 'undefined') {
+              const audio = new Audio('/sounds/notification.mp3');
+              
+              // Add event listeners to handle loading errors
+              audio.addEventListener('error', () => {
+                console.log('Audio file could not be loaded, using browser beep as fallback');
+                // Use a fallback notification
+                if ('Notification' in window && Notification.permission === 'granted') {
+                  new Notification('Osprey Labs Assistant', {
+                    body: 'Do you have any questions about our services?',
+                    icon: '/favicon.svg'
+                  });
+                }
+              });
+              
+              audio.volume = 0.5; // Set volume to 50%
+              audio.play().catch(e => {
+                console.log('Audio play failed:', e);
+                // Browsers often block autoplay without user interaction
+                // No need for fallback here as this is expected behavior
+              });
+            }
+          } catch (error) {
+            console.error('Failed to play notification sound:', error);
+          }
+        }, 1000);
+      }, 25000); // 25 seconds in milliseconds
+      
+      return () => clearTimeout(timer);
+    }
+  }, [hasAutoOpened]);
+
   // Initialize the thread when the component mounts
   useEffect(() => {
     async function initializeThread() {
@@ -68,6 +133,28 @@ export default function ChatAssistant() {
       initializeThread();
     }
   }, [threadId]);
+
+  // Request notification permissions when component mounts
+  useEffect(() => {
+    // Check if the browser supports notifications
+    if ('Notification' in window && Notification.permission === 'default') {
+      // After a user interaction to satisfy browser requirements
+      const handleUserInteraction = () => {
+        Notification.requestPermission();
+        // Remove the event listeners after we've requested permission
+        window.removeEventListener('click', handleUserInteraction);
+        window.removeEventListener('keydown', handleUserInteraction);
+      };
+      
+      window.addEventListener('click', handleUserInteraction);
+      window.addEventListener('keydown', handleUserInteraction);
+      
+      return () => {
+        window.removeEventListener('click', handleUserInteraction);
+        window.removeEventListener('keydown', handleUserInteraction);
+      };
+    }
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -184,11 +271,37 @@ export default function ChatAssistant() {
 
   return (
     <>
+      {/* Initial attention-grabbing animation */}
+      <AnimatePresence>
+        {showInitialAnimation && !isOpen && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0, bottom: '2rem', right: '2rem' }}
+            animate={{ opacity: 1, scale: [0, 1.2, 1], bottom: '8rem', right: '2rem' }}
+            exit={{ opacity: 0, scale: 0 }}
+            transition={{ duration: 0.8 }}
+            className="fixed z-50 bg-white p-4 rounded-lg shadow-lg max-w-xs"
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 bg-primary-100 p-2 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div>
+                <p className="font-medium text-gray-800">Need help with anything?</p>
+                <p className="text-sm text-gray-600 mt-1">Our assistant is here to answer your questions!</p>
+              </div>
+            </div>
+            <div className="absolute -bottom-2 right-6 w-4 h-4 bg-white transform rotate-45"></div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Chat button */}
       <div className="fixed bottom-8 right-8 z-50">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center justify-center w-16 h-16 rounded-full bg-primary-600 text-white shadow-lg hover:bg-primary-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+          className={`flex items-center justify-center w-16 h-16 rounded-full bg-primary-600 text-white shadow-lg hover:bg-primary-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 ${hasAutoOpened && !isOpen ? 'animate-pulse' : ''}`}
           aria-label="Open chat assistant"
         >
           {isOpen ? (
@@ -196,9 +309,17 @@ export default function ChatAssistant() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-            </svg>
+            <>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+              {hasAutoOpened && !isOpen && (
+                <span className="absolute -top-2 -right-2 flex h-5 w-5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-5 w-5 bg-secondary-500"></span>
+                </span>
+              )}
+            </>
           )}
         </button>
       </div>

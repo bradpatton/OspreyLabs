@@ -20,7 +20,7 @@ export default function Header() {
             className="h-8 w-auto"
             priority
           />
-          <span className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-secondary-600 text-transparent bg-clip-text">
+          <span className="text-5xl font-bold bg-gradient-to-r from-primary-600 to-secondary-600 text-transparent bg-clip-text">
             Osprey Labs
           </span>
         </Link>

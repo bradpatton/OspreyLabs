@@ -17,7 +17,7 @@ export default function Footer() {
                 height={30}
                 className="h-7 w-auto brightness-125"
               />
-              <span className="text-2xl font-bold bg-gradient-to-r from-primary-400 to-secondary-400 text-transparent bg-clip-text">
+              <span className="text-4xl font-bold bg-gradient-to-r from-primary-400 to-secondary-400 text-transparent bg-clip-text">
                 Osprey Labs
               </span>
             </div>

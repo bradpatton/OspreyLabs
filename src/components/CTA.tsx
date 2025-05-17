@@ -135,7 +135,7 @@ export default function CTA() {
                       </svg>
                     </div>
                     <div className="ml-4">
-                      <p className="font-medium">Visit our office</p>
+                      <p className="font-medium">Our office</p>
                       <p className="mt-1 opacity-80">410 E. Beach Drive, Panama City, FL 32401</p>
                     </div>
                   </div>

@@ -27,7 +27,7 @@ const services = [
       'Inventory & Order Management',
       'Scheduling & Billing Automation',
     ],
-    image: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
+    image: '/images/Process_automation.jpg',
   },
   {
     title: 'Custom Business Software Development',
@@ -39,7 +39,7 @@ const services = [
       'Internal Workflow Tools',
       'Legacy System Modernization',
     ],
-    image: 'https://images.unsplash.com/photo-1621839673705-6617adf9e890?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
+    image: '/images/business-automation.jpg',
   },
 ];
 
