@@ -4,6 +4,10 @@ const nextConfig = {
   images: {
     domains: ['images.unsplash.com'],
   },
+  env: {
+    NEXT_PUBLIC_OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    NEXT_PUBLIC_OPENAI_ASSISTANT_ID: process.env.OPENAI_ASSISTANT_ID
+  }
 };
 
 module.exports = nextConfig; 

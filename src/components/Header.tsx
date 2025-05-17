@@ -26,18 +26,21 @@ export default function Header() {
         </Link>
         
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-8">
-          <Link href="#features" className="text-gray-600 hover:text-primary-600 transition-colors">
+        <nav className="hidden md:flex items-center space-x-6">
+          <Link href="/#features" className="text-gray-600 hover:text-primary-600 transition-colors">
             Features
           </Link>
-          <Link href="#services" className="text-gray-600 hover:text-primary-600 transition-colors">
+          <Link href="/#services" className="text-gray-600 hover:text-primary-600 transition-colors">
             Services
           </Link>
-          <Link href="#case-studies" className="text-gray-600 hover:text-primary-600 transition-colors">
+          {/*<Link href="#case-studies" className="text-gray-600 hover:text-primary-600 transition-colors">
             Case Studies
           </Link>
           <Link href="#pricing" className="text-gray-600 hover:text-primary-600 transition-colors">
             Pricing
+          </Link>*/}
+          <Link href="/careers" className="text-gray-600 hover:text-primary-600 transition-colors">
+            Careers
           </Link>
           <Link href="#contact" className="btn btn-primary">
             Get Started
@@ -88,7 +91,7 @@ export default function Header() {
             >
               Services
             </Link>
-            <Link 
+            {/*<Link 
               href="#case-studies" 
               className="text-gray-600 hover:text-primary-600 transition-colors px-2 py-1"
               onClick={() => setIsMenuOpen(false)}
@@ -101,6 +104,13 @@ export default function Header() {
               onClick={() => setIsMenuOpen(false)}
             >
               Pricing
+            </Link>*/}
+            <Link 
+              href="/careers" 
+              className="text-gray-600 hover:text-primary-600 transition-colors px-2 py-1"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Careers
             </Link>
             <Link 
               href="#contact" 

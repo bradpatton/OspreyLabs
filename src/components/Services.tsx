@@ -2,41 +2,42 @@
 
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
+import Image from 'next/image';
 
 const services = [
   {
-    title: 'AI Automation',
-    description: 'Leverage artificial intelligence to automate complex business processes, reduce manual work, and increase operational efficiency.',
+    title: 'AI Solutions & Integration',
+    description: 'Leverage the latest in artificial intelligence without the headache. We integrate AI technologies into your business processes and ensure all systems work seamlessly together. From deploying an AI chatbot that handles customer inquiries to implementing predictive analytics that guide your decisions, we take care of the heavy lifting. Our team also provides strategic AI consulting to identify high-ROI opportunities and train your staff on new AI tools, so you get the most value out of every innovation.',
     features: [
-      'Intelligent document processing',
-      'Predictive maintenance systems',
-      'Automated decision systems',
-      'Natural language processing solutions',
-      'Virtual assistants and chatbots',
+      'AI Chatbots & Virtual Assistants',
+      'Predictive Analytics & Insights',
+      'Document Processing Automation',
+      'Machine Learning Integration',
+      'AI Strategy & Training',
     ],
-    image: 'https://images.unsplash.com/photo-1593642634315-48f5414c3ad9?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
+    image: '/images/neeqolah-creative-works-qbId5TLFG2s-unsplash.jpg',
   },
   {
-    title: 'Custom Software Development',
-    description: 'Build tailor-made software solutions designed specifically for your unique business needs and workflows.',
+    title: 'Business Process Automation',
+    description: 'We map out your key workflows and automate them using the latest tools and AI techniques. Whether it\'s streamlining your sales pipeline or speeding up fulfillment, we implement solutions that reduce manual work and operational costs. The result is a more efficient, error-free business where your team can focus on high-value activities instead of busywork.',
     features: [
-      'Web application development',
-      'Enterprise software solutions',
-      'API development and integration',
-      'Legacy system modernization',
-      'Cloud-native architecture',
+      'CRM & Sales Automation',
+      'Marketing & Email Automation',
+      'Operations & Workflow Automation',
+      'Inventory & Order Management',
+      'Scheduling & Billing Automation',
     ],
     image: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
   },
   {
-    title: 'Integrated AI Solutions for Customer Engagement',
-    description: 'Enhance customer experiences with intelligent AI solutions. From chatbots to personalized marketing automation, we create seamless systems that engage, qualify, and support your customers at every touchpoint.',
+    title: 'Custom Business Software Development',
+    description: 'When off-the-shelf software falls short, we build custom solutions from the ground up. Our developers create applications tailored precisely to your business requirements - whether you need a custom CRM, a specialized web/mobile app, or an internal workflow tool. We incorporate AI capabilities where appropriate and ensure every custom solution integrates with your operations. You get software that solves your exact challenges and scales with your growth.',
     features: [
-      'AI Chatbots for 24/7 Customer Support',
-      'Personalized Marketing Automation',
-      'AI-Powered Lead Qualification',
-      'Sentiment Analysis for Customer Feedback',
-      'Predictive Customer Insights',
+      'Custom CRM & Database Systems',
+      'Web & Mobile Applications',
+      'AI Dashboards & BI Tools',
+      'Internal Workflow Tools',
+      'Legacy System Modernization',
     ],
     image: 'https://images.unsplash.com/photo-1621839673705-6617adf9e890?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80',
   },
@@ -79,11 +80,19 @@ export default function Services() {
               >
                 <div className={`order-2 ${isEven ? 'lg:order-2' : 'lg:order-1'}`}>
                   <div className="relative h-96 w-full rounded-2xl overflow-hidden shadow-xl">
-                    <img
-                      src={service.image}
-                      alt={service.title}
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
+                    {index === 0 ? (
+                      <img 
+                        src="/images/neeqolah-creative-works-qbId5TLFG2s-unsplash.jpg"
+                        alt={service.title}
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    ) : (
+                      <img
+                        src={service.image}
+                        alt={service.title}
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
                     <div className="absolute bottom-6 left-6 right-6">
                       <h3 className="text-2xl font-bold text-white">{service.title}</h3>

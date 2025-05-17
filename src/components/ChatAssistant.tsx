@@ -2,11 +2,35 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  createThread, 
+  sendMessageAndGetResponse
+} from '@/utils/openai';
 
 type Message = {
   role: 'user' | 'assistant';
   content: string;
 };
+
+// Function to log chat messages
+async function logChatMessage(threadId: string, userMessage: string, assistantResponse: string) {
+  try {
+    await fetch('/api/chat-logs', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        threadId,
+        userMessage,
+        assistantResponse,
+      }),
+    });
+  } catch (error) {
+    console.error('Failed to log chat message:', error);
+    // Non-blocking error - we still want the chat to work even if logging fails
+  }
+}
 
 export default function ChatAssistant() {
   const [isOpen, setIsOpen] = useState(false);
@@ -18,6 +42,7 @@ export default function ChatAssistant() {
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [threadId, setThreadId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const companyInfo = {
@@ -27,6 +52,22 @@ export default function ChatAssistant() {
     'contact': 'You can reach us at info@ospreylabs.com or call us at +1 (555) 123-4567. Alternatively, fill out the contact form on our website, and we\'ll get back to you within 24 hours.',
     'location': 'Our main office is located at 123 Innovation Drive, Tech City, CA 94123. We also work remotely with clients worldwide.',
   };
+
+  // Initialize the thread when the component mounts
+  useEffect(() => {
+    async function initializeThread() {
+      try {
+        const newThreadId = await createThread();
+        setThreadId(newThreadId);
+      } catch (error) {
+        console.error('Failed to create thread:', error);
+      }
+    }
+    
+    if (!threadId) {
+      initializeThread();
+    }
+  }, [threadId]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -76,30 +117,69 @@ export default function ChatAssistant() {
     return response;
   };
 
-  const handleSendMessage = async (e) => {
+  const handleSendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim() || !threadId) return;
+    
+    const message = inputValue.trim();
     
     // Add user message
     const userMessage = {
       role: 'user' as const,
-      content: inputValue,
+      content: message,
     };
     
     setMessages((prev) => [...prev, userMessage]);
     setInputValue('');
+    setIsTyping(true);
     
-    // Get assistant response
-    const response = await getResponse(userMessage.content);
-    
-    // Add assistant response
-    const assistantMessage = {
-      role: 'assistant' as const,
-      content: response,
-    };
-    
-    setMessages((prev) => [...prev, assistantMessage]);
+    try {
+      // Create a placeholder for the assistant's response
+      setMessages((prev) => [
+        ...prev, 
+        { role: 'assistant', content: '' }
+      ]);
+      
+      // Send the message to the API and get streaming response
+      const initialResponse = await sendMessageAndGetResponse(threadId, message);
+      
+      // Start with empty content then simulate streaming
+      let displayedContent = '';
+      
+      // Simulate typing by adding words one by one
+      const words = initialResponse.split(' ');
+      for (let i = 0; i < words.length; i++) {
+        displayedContent += (i > 0 ? ' ' : '') + words[i];
+        
+        setMessages((prev) => {
+          const newMessages = [...prev];
+          // Update the last message (assistant's response)
+          if (newMessages.length > 0 && newMessages[newMessages.length - 1].role === 'assistant') {
+            newMessages[newMessages.length - 1].content = displayedContent;
+          }
+          return newMessages;
+        });
+        
+        // Random delay between 50-150ms to simulate typing
+        await new Promise(resolve => setTimeout(resolve, 50 + Math.random() * 100));
+      }
+      
+      // Log the completed conversation
+      await logChatMessage(threadId, message, initialResponse);
+      
+      setIsTyping(false);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: "I'm sorry, I encountered an error. Please try again later.",
+        },
+      ]);
+      setIsTyping(false);
+    }
   };
 
   return (
@@ -168,7 +248,7 @@ export default function ChatAssistant() {
                     </div>
                   </div>
                 ))}
-                {isTyping && (
+                {isTyping && messages[messages.length - 1]?.role !== 'assistant' && (
                   <div className="flex justify-start">
                     <div className="max-w-[80%] rounded-lg p-3 bg-white text-gray-800 border border-gray-200">
                       <div className="flex space-x-1">
@@ -187,16 +267,18 @@ export default function ChatAssistant() {
             <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-200 bg-white">
               <div className="flex items-center gap-2">
                 <input
+                  id="chat-input"
                   type="text"
                   className="flex-1 input py-2"
                   placeholder="Type your message..."
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
+                  disabled={!threadId || isTyping}
                 />
                 <button
                   type="submit"
                   className="btn btn-primary p-2"
-                  disabled={!inputValue.trim() || isTyping}
+                  disabled={!inputValue.trim() || !threadId || isTyping}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
@@ -204,7 +286,7 @@ export default function ChatAssistant() {
                 </button>
               </div>
               <p className="text-xs text-gray-500 mt-2">
-                Ask about our services, pricing, or company information
+                Ask about our services, pricing, or how we can help your business
               </p>
             </form>
           </motion.div>

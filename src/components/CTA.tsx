@@ -3,36 +3,58 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
+import { ChangeEvent, FormEvent } from 'react';
 
 export default function CTA() {
   const [formState, setFormState] = useState({
     name: '',
     email: '',
     company: '',
+    phone: '',
     message: '',
     service: 'AI Automation',
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [error, setError] = useState('');
   
   const { ref, inView } = useInView({
     triggerOnce: true,
     threshold: 0.1,
   });
 
-  const handleChange = (e) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormState((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError('');
     
-    // Simulate form submission
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      console.log('Submitting form with data:', { ...formState, timestamp: new Date().toISOString() });
+      
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formState,
+          timestamp: new Date().toISOString(),
+        }),
+      });
+      
+      const responseData = await response.json();
+      console.log('Server response:', response.status, responseData);
+      
+      if (!response.ok) {
+        throw new Error(responseData.error || 'Failed to submit form');
+      }
+      
       setIsSubmitted(true);
       
       // Reset form after successful submission
@@ -40,6 +62,7 @@ export default function CTA() {
         name: '',
         email: '',
         company: '',
+        phone: '',
         message: '',
         service: 'AI Automation',
       });
@@ -48,7 +71,12 @@ export default function CTA() {
       setTimeout(() => {
         setIsSubmitted(false);
       }, 5000);
-    }, 1500);
+    } catch (err) {
+      console.error('Error submitting form:', err);
+      setError(`Please fill out all fields: ${err instanceof Error ? err.message : 'Unknown error'}. Please try again later.`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -69,7 +97,7 @@ export default function CTA() {
                 animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
                 transition={{ duration: 0.5 }}
               >
-                <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Transform Your Business?</h2>
+                <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Transform Your Business? Let's Talk.</h2>
                 <p className="text-lg md:text-xl opacity-90 mb-8">
                   Get in touch with our team to discuss how we can help you leverage AI and custom software to solve your business challenges.
                 </p>
@@ -83,7 +111,7 @@ export default function CTA() {
                     </div>
                     <div className="ml-4">
                       <p className="font-medium">Contact us directly</p>
-                      <p className="mt-1 opacity-80">+1 (555) 123-4567</p>
+                      <p className="mt-1 opacity-80">+1 (850) 832-4716</p>
                     </div>
                   </div>
                   
@@ -95,7 +123,7 @@ export default function CTA() {
                     </div>
                     <div className="ml-4">
                       <p className="font-medium">Email us</p>
-                      <p className="mt-1 opacity-80">info@ospreylabs.com</p>
+                      <p className="mt-1 opacity-80">brad@ospreylabratories.com</p>
                     </div>
                   </div>
                   
@@ -108,7 +136,7 @@ export default function CTA() {
                     </div>
                     <div className="ml-4">
                       <p className="font-medium">Visit our office</p>
-                      <p className="mt-1 opacity-80">123 Innovation Drive, Tech City, CA 94123</p>
+                      <p className="mt-1 opacity-80">410 E. Beach Drive, Panama City, FL 32401</p>
                     </div>
                   </div>
                 </div>
@@ -135,6 +163,12 @@ export default function CTA() {
                   </div>
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-6">
+                    {error && (
+                      <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg">
+                        {error}
+                      </div>
+                    )}
+                    
                     <div>
                       <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                         Full Name
@@ -163,6 +197,21 @@ export default function CTA() {
                         className="input"
                         placeholder="you@company.com"
                         value={formState.email}
+                        onChange={handleChange}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                        Phone Number
+                      </label>
+                      <input
+                        type="tel"
+                        id="phone"
+                        name="phone"
+                        className="input"
+                        placeholder="Your phone number"
+                        value={formState.phone}
                         onChange={handleChange}
                       />
                     </div>

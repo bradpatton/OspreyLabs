@@ -29,7 +29,7 @@ export default function Hero() {
                 transition={{ delay: 0.3 }}
                 className="text-4xl md:text-5xl font-bold leading-tight"
               >
-                Transform Your Business with <span className="bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">Intelligent Automation</span>
+                Cut Costs, Save Time & Scale Up with <span className="bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent">AI Automation</span>
               </motion.h1>
               <motion.p 
                 initial={{ opacity: 0, y: 20 }}
@@ -48,7 +48,7 @@ export default function Hero() {
               className="flex flex-col sm:flex-row gap-4"
             >
               <a href="#contact" className="btn btn-primary text-base px-6 py-3">
-                Get Started
+              Schedule a Free Consultation
               </a>
               <a href="#services" className="btn btn-outline text-base px-6 py-3">
                 Explore Services
