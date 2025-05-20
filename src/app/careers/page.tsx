@@ -52,7 +52,7 @@ export default function CareersPage() {
       id: 'frontend-dev-1',
       title: 'Senior Frontend Developer',
       department: 'Engineering',
-      location: 'Hybrid (San Francisco)',
+      location: 'Hybrid (Panama City)',
       type: 'Full-time',
       description: 'Join our team as a Senior Frontend Developer to create beautiful, responsive, and user-friendly interfaces for our client applications. You\'ll work closely with designers and backend developers to build seamless user experiences.',
       requirements: [
@@ -77,7 +77,7 @@ export default function CareersPage() {
       id: 'product-manager-1',
       title: 'Product Manager',
       department: 'Product',
-      location: 'Remote (US)',
+      location: 'Hybrid (Panama City)',
       type: 'Full-time',
       description: 'We\'re seeking an experienced Product Manager to lead the development of our AI automation products. You\'ll work with stakeholders to define product strategy, roadmap, and features that deliver exceptional value to our clients.',
       requirements: [
@@ -102,7 +102,7 @@ export default function CareersPage() {
       id: 'data-scientist-1',
       title: 'Senior Data Scientist',
       department: 'Data Science',
-      location: 'Remote (Global)',
+      location: 'Hybrid (Panama City)',
       type: 'Full-time',
       description: 'Join our data science team to help clients extract valuable insights from their data. You\'ll design and implement data analysis pipelines, build predictive models, and communicate findings to stakeholders.',
       requirements: [
@@ -120,31 +120,6 @@ export default function CareersPage() {
         'Communicate findings to technical and non-technical stakeholders',
         'Collaborate with engineering teams to implement data solutions',
         'Stay current with the latest data science research and techniques'
-      ],
-      isExpanded: false
-    },
-    {
-      id: 'ux-designer-1',
-      title: 'UX/UI Designer',
-      department: 'Design',
-      location: 'Hybrid (New York)',
-      type: 'Full-time',
-      description: 'We\'re looking for a talented UX/UI Designer to create intuitive and engaging user experiences for our client applications. You\'ll work closely with product managers and developers to design interfaces that are both beautiful and functional.',
-      requirements: [
-        'Bachelor\'s degree in Design, HCI, or related field',
-        '3+ years of experience in UX/UI design',
-        'Proficiency in design tools (Figma, Adobe XD, Sketch)',
-        'Strong portfolio demonstrating UX process and UI skills',
-        'Knowledge of user research and usability testing',
-        'Understanding of accessibility standards and responsive design'
-      ],
-      responsibilities: [
-        'Create wireframes, prototypes, and high-fidelity designs',
-        'Conduct user research and usability testing',
-        'Develop user flows and information architecture',
-        'Collaborate with developers to implement designs',
-        'Maintain design systems and documentation',
-        'Stay current with design trends and best practices'
       ],
       isExpanded: false
     }

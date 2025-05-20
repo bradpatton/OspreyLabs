@@ -51,27 +51,17 @@ export default function Footer() {
             <ul className="space-y-2">
               <li>
                 <Link href="#services" className="text-gray-400 hover:text-white transition-colors">
-                  AI Automation
+                  AI Solutions & Integration
                 </Link>
               </li>
               <li>
                 <Link href="#services" className="text-gray-400 hover:text-white transition-colors">
-                  Custom Software
+                  Custom Software Development
                 </Link>
               </li>
               <li>
                 <Link href="#services" className="text-gray-400 hover:text-white transition-colors">
-                  Mobile Development
-                </Link>
-              </li>
-              <li>
-                <Link href="#services" className="text-gray-400 hover:text-white transition-colors">
-                  Enterprise Solutions
-                </Link>
-              </li>
-              <li>
-                <Link href="#services" className="text-gray-400 hover:text-white transition-colors">
-                  Cloud Services
+                  Business Process Automation
                 </Link>
               </li>
             </ul>
@@ -83,11 +73,6 @@ export default function Footer() {
               <li>
                 <Link href="#" className="text-gray-400 hover:text-white transition-colors">
                   About Us
-                </Link>
-              </li>
-              <li>
-                <Link href="#case-studies" className="text-gray-400 hover:text-white transition-colors">
-                  Case Studies
                 </Link>
               </li>
               <li>

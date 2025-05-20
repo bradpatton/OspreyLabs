@@ -36,26 +36,14 @@ export default function ChatAssistant() {
   const [isOpen, setIsOpen] = useState(false);
   const [hasAutoOpened, setHasAutoOpened] = useState(false);
   const [showInitialAnimation, setShowInitialAnimation] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: 'assistant',
-      content: 'Hi there! 👋 I\'m the Osprey Labs AI assistant, Theo. How can I help you today?',
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [threadId, setThreadId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const companyInfo = {
-    'services': 'We offer AI Automation, Custom Software Development, and Mobile App Development services. Our AI solutions help automate business processes, our custom software is tailored to your specific needs, and our mobile apps are built for both iOS and Android platforms.',
-    'pricing': 'Our pricing starts at $3,999 for the Starter package, $8,999 for the Professional package, and we offer custom pricing for Enterprise solutions. Contact us for a detailed quote based on your specific requirements.',
-    'about': 'Osprey Labs is a leading AI automation and custom development company. We specialize in building intelligent solutions that help businesses streamline operations, reduce costs, and drive growth.',
-    'contact': 'You can reach us at info@ospreylabs.com or call us at +1 (555) 123-4567. Alternatively, fill out the contact form on our website, and we\'ll get back to you within 24 hours.',
-    'location': 'Our main office is located at 123 Innovation Drive, Tech City, CA 94123. We also work remotely with clients worldwide.',
-  };
-
-  // Get time-based greeting
+  // Get time-based greeting for UI elements
   const getTimeBasedGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good morning';
@@ -73,44 +61,7 @@ export default function ChatAssistant() {
         setTimeout(() => {
           setIsOpen(true);
           setHasAutoOpened(true);
-          
-          // Add an auto welcome message when it opens
-          setMessages((prev) => [
-            ...prev,
-            {
-              role: 'assistant',
-              content: `${getTimeBasedGreeting()}! 👋 I noticed you're exploring our site. Do you have any questions about our services or how we can help your business?`
-            }
-          ]);
-          
-          // Play a subtle notification sound
-          try {
-            // Check if the browser supports Audio API
-            if (typeof Audio !== 'undefined') {
-              const audio = new Audio('/sounds/notification.mp3');
-              
-              // Add event listeners to handle loading errors
-              audio.addEventListener('error', () => {
-                console.log('Audio file could not be loaded, using browser beep as fallback');
-                // Use a fallback notification
-                if ('Notification' in window && Notification.permission === 'granted') {
-                  new Notification('Osprey Labs Assistant', {
-                    body: 'Do you have any questions about our services?',
-                    icon: '/favicon.svg'
-                  });
-                }
-              });
-              
-              audio.volume = 0.5; // Set volume to 50%
-              audio.play().catch(e => {
-                console.log('Audio play failed:', e);
-                // Browsers often block autoplay without user interaction
-                // No need for fallback here as this is expected behavior
-              });
-            }
-          } catch (error) {
-            console.error('Failed to play notification sound:', error);
-          }
+          playNotificationSound();
         }, 1000);
       }, 25000); // 25 seconds in milliseconds
       
@@ -137,24 +88,96 @@ export default function ChatAssistant() {
   // Request notification permissions when component mounts
   useEffect(() => {
     // Check if the browser supports notifications
-    if ('Notification' in window && Notification.permission === 'default') {
-      // After a user interaction to satisfy browser requirements
-      const handleUserInteraction = () => {
-        Notification.requestPermission();
-        // Remove the event listeners after we've requested permission
-        window.removeEventListener('click', handleUserInteraction);
-        window.removeEventListener('keydown', handleUserInteraction);
+    if ('Notification' in window) {
+      // Don't ask for permission immediately, wait for a user interaction
+      if (Notification.permission === 'default') {
+        const handleUserInteraction = () => {
+          Notification.requestPermission().then(permission => {
+            console.log('Notification permission:', permission);
+          }).catch(error => {
+            console.error('Error requesting notification permission:', error);
+          });
+          
+          // Remove the event listeners after we've requested permission
+          window.removeEventListener('click', handleUserInteraction);
+          window.removeEventListener('keydown', handleUserInteraction);
+          window.removeEventListener('touchstart', handleUserInteraction);
+        };
+        
+        window.addEventListener('click', handleUserInteraction);
+        window.addEventListener('keydown', handleUserInteraction);
+        window.addEventListener('touchstart', handleUserInteraction);
+        
+        return () => {
+          window.removeEventListener('click', handleUserInteraction);
+          window.removeEventListener('keydown', handleUserInteraction);
+          window.removeEventListener('touchstart', handleUserInteraction);
+        };
+      }
+    }
+  }, []);
+
+  // Preload notification sound
+  useEffect(() => {
+    if (typeof Audio !== 'undefined') {
+      // Use absolute path to ensure sound loads correctly
+      const audio = new Audio('/sounds/notification.mp3');
+      audio.preload = 'auto';
+      
+      // Try to load the sound in advance
+      const preloadSound = () => {
+        audio.load();
+        console.log('Preloading notification sound');
       };
       
-      window.addEventListener('click', handleUserInteraction);
-      window.addEventListener('keydown', handleUserInteraction);
+      // Add error handling
+      audio.addEventListener('error', (e) => {
+        console.error('Audio loading error:', e);
+      });
+      
+      // Add success handling
+      audio.addEventListener('canplaythrough', () => {
+        console.log('Notification sound loaded successfully');
+      });
+      
+      audioRef.current = audio;
+      
+      // Try to preload after a short delay to ensure browser is ready
+      const timer = setTimeout(preloadSound, 2000);
       
       return () => {
-        window.removeEventListener('click', handleUserInteraction);
-        window.removeEventListener('keydown', handleUserInteraction);
+        clearTimeout(timer);
+        if (audioRef.current) {
+          audioRef.current.removeEventListener('error', () => {});
+          audioRef.current.removeEventListener('canplaythrough', () => {});
+          audioRef.current = null;
+        }
       };
     }
   }, []);
+
+  // Function to play notification sound
+  const playNotificationSound = () => {
+    if (audioRef.current) {
+      audioRef.current.volume = 0.4;
+      
+      // Reset the audio to the beginning before playing
+      audioRef.current.currentTime = 0;
+      
+      // Try to play the sound, but don't worry if it fails due to browser restrictions
+      audioRef.current.play().catch(error => {
+        console.log('Could not play notification sound:', error);
+        
+        // If sound fails and notifications are allowed, show a notification instead
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('Osprey Labs Assistant', {
+            body: 'Chat assistant is ready to help you',
+            icon: '/favicon.svg'
+          });
+        }
+      });
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -163,46 +186,6 @@ export default function ChatAssistant() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
-
-  const getResponse = async (userMessage: string) => {
-    // Simulate API call to get response
-    setIsTyping(true);
-    
-    // Wait for 1-2 seconds to simulate processing
-    await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
-    
-    let response = 'I\'m not sure how to help with that. Could you try asking something about our services, pricing, or contact information?';
-    
-    // Simple keyword-based responses
-    const lowercaseMessage = userMessage.toLowerCase();
-    
-    if (lowercaseMessage.includes('hello') || lowercaseMessage.includes('hi') || lowercaseMessage.includes('hey')) {
-      response = 'Hello! How can I assist you today?';
-    } else if (lowercaseMessage.includes('service')) {
-      response = companyInfo.services;
-    } else if (lowercaseMessage.includes('pricing') || lowercaseMessage.includes('cost') || lowercaseMessage.includes('price')) {
-      response = companyInfo.pricing;
-    } else if (lowercaseMessage.includes('about') || lowercaseMessage.includes('company')) {
-      response = companyInfo.about;
-    } else if (lowercaseMessage.includes('contact') || lowercaseMessage.includes('email') || lowercaseMessage.includes('phone')) {
-      response = companyInfo.contact;
-    } else if (lowercaseMessage.includes('location') || lowercaseMessage.includes('address') || lowercaseMessage.includes('office')) {
-      response = companyInfo.location;
-    } else if (lowercaseMessage.includes('ai') || lowercaseMessage.includes('automation')) {
-      response = 'Our AI automation solutions help businesses streamline processes, reduce manual work, and increase efficiency. We build custom AI tools that integrate with your existing systems.';
-    } else if (lowercaseMessage.includes('mobile') || lowercaseMessage.includes('app')) {
-      response = 'We develop high-quality mobile applications for both iOS and Android platforms. Our apps are designed with a focus on user experience and performance.';
-    } else if (lowercaseMessage.includes('custom') || lowercaseMessage.includes('software')) {
-      response = 'Our custom software development services are tailored to your specific business needs. We build scalable, secure, and maintainable solutions using modern technologies.';
-    } else if (lowercaseMessage.includes('thank')) {
-      response = 'You\'re welcome! Is there anything else I can help you with?';
-    } else if (lowercaseMessage.includes('bye') || lowercaseMessage.includes('goodbye')) {
-      response = 'Goodbye! Feel free to reach out if you have any more questions.';
-    }
-    
-    setIsTyping(false);
-    return response;
-  };
 
   const handleSendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -222,7 +205,7 @@ export default function ChatAssistant() {
     setIsTyping(true);
     
     try {
-      // Create a placeholder for the assistant's response
+      // Create a placeholder for the assistant's response with typing animation
       setMessages((prev) => [
         ...prev, 
         { role: 'assistant', content: '' }
@@ -271,6 +254,47 @@ export default function ChatAssistant() {
 
   return (
     <>
+      {/* CSS for typing indicator animation */}
+      <style jsx global>{`
+        .typing-indicator {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+        
+        .typing-indicator span {
+          display: block;
+          width: 8px;
+          height: 8px;
+          background-color: #94a3b8;
+          border-radius: 50%;
+          opacity: 0.6;
+        }
+        
+        .typing-indicator span:nth-child(1) {
+          animation: typing 1s infinite;
+        }
+        
+        .typing-indicator span:nth-child(2) {
+          animation: typing 1s infinite 0.2s;
+        }
+        
+        .typing-indicator span:nth-child(3) {
+          animation: typing 1s infinite 0.4s;
+        }
+        
+        @keyframes typing {
+          0%, 100% {
+            transform: translateY(0);
+            opacity: 0.6;
+          }
+          50% {
+            transform: translateY(-4px);
+            opacity: 1;
+          }
+        }
+      `}</style>
+
       {/* Initial attention-grabbing animation */}
       <AnimatePresence>
         {showInitialAnimation && !isOpen && (
@@ -288,8 +312,8 @@ export default function ChatAssistant() {
                 </svg>
               </div>
               <div>
-                <p className="font-medium text-gray-800">Need help with anything?</p>
-                <p className="text-sm text-gray-600 mt-1">Our assistant is here to answer your questions!</p>
+                <p className="font-medium text-gray-800">{getTimeBasedGreeting()}!</p>
+                <p className="text-sm text-gray-600 mt-1">I'm Theo, the Osprey Labs AI assistant. Can I help you with anything?</p>
               </div>
             </div>
             <div className="absolute -bottom-2 right-6 w-4 h-4 bg-white transform rotate-45"></div>
@@ -345,44 +369,114 @@ export default function ChatAssistant() {
                 </div>
                 <div>
                   <h3 className="font-medium">Osprey Labs Assistant</h3>
-                  <p className="text-xs text-white/70">Online | Ask me anything</p>
+                  <p className="text-xs text-white/70">Theo | How can I help you today?</p>
                 </div>
               </div>
             </div>
             
+            {/* Empty state if no messages */}
+            {messages.length === 0 && !isTyping && (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, type: "spring", stiffness: 300 }}
+                className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-gray-50"
+              >
+                <motion.div 
+                  initial={{ scale: 0.9 }}
+                  animate={{ scale: 1 }}
+                  transition={{ 
+                    repeat: Infinity, 
+                    repeatType: "reverse", 
+                    duration: 2,
+                    ease: "easeInOut"
+                  }}
+                  className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mb-4"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                </motion.div>
+                <h4 className="text-lg font-medium text-gray-800 mb-2">{getTimeBasedGreeting()}!</h4>
+                <p className="text-gray-600 mb-6">I'm Theo, the Osprey Labs AI assistant. How can I help you today?</p>
+                <motion.div
+                  initial={{ opacity: 0.5, y: 3 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ 
+                    repeat: Infinity, 
+                    repeatType: "reverse", 
+                    duration: 1.5
+                  }}
+                >
+                  <p className="text-sm text-primary-600">Ask me anything about our services...</p>
+                </motion.div>
+              </motion.div>
+            )}
+            
             {/* Chat messages */}
-            <div className="flex-1 p-4 overflow-y-auto bg-gray-50">
-              <div className="space-y-4">
-                {messages.map((message, index) => (
-                  <div
-                    key={index}
-                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div
-                      className={`max-w-[80%] rounded-lg p-3 ${
-                        message.role === 'user'
-                          ? 'bg-primary-600 text-white'
-                          : 'bg-white text-gray-800 border border-gray-200'
-                      }`}
+            {(messages.length > 0 || isTyping) && (
+              <div className="flex-1 p-4 overflow-y-auto bg-gray-50">
+                <div className="space-y-4">
+                  {messages.map((message, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ 
+                        duration: 0.3, 
+                        delay: index === messages.length - 1 ? 0 : 0,
+                        type: "spring",
+                        stiffness: 400,
+                        damping: 25
+                      }}
+                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
-                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                    </div>
-                  </div>
-                ))}
-                {isTyping && messages[messages.length - 1]?.role !== 'assistant' && (
-                  <div className="flex justify-start">
-                    <div className="max-w-[80%] rounded-lg p-3 bg-white text-gray-800 border border-gray-200">
-                      <div className="flex space-x-1">
-                        <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce"></div>
-                        <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                        <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                      <div
+                        className={`max-w-[80%] rounded-lg p-3 shadow-sm ${
+                          message.role === 'user'
+                            ? 'bg-primary-600 text-white'
+                            : 'bg-white text-gray-800 border border-gray-200'
+                        }`}
+                      >
+                        {message.content ? (
+                          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                        ) : message.role === 'assistant' ? (
+                          // Animated typing indicator for empty assistant messages
+                          <div className="flex items-center h-6">
+                            <div className="typing-indicator">
+                              <span></span>
+                              <span></span>
+                              <span></span>
+                            </div>
+                          </div>
+                        ) : null}
                       </div>
-                    </div>
-                  </div>
-                )}
-                <div ref={messagesEndRef} />
+                    </motion.div>
+                  ))}
+                  {isTyping && messages[messages.length - 1]?.role !== 'assistant' && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 400,
+                        damping: 25
+                      }}
+                      className="flex justify-start"
+                    >
+                      <div className="max-w-[80%] rounded-lg p-3 bg-white text-gray-800 border border-gray-200 shadow-sm">
+                        <div className="typing-indicator">
+                          <span></span>
+                          <span></span>
+                          <span></span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
               </div>
-            </div>
+            )}
             
             {/* Chat input */}
             <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-200 bg-white">

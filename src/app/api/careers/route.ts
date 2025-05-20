@@ -2,16 +2,23 @@ import { NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
 
-// Define the storage file path
+// Define the storage file paths
 const STORAGE_DIR = path.join(process.cwd(), 'logs');
 const JOB_APPLICATIONS_FILE = path.join(STORAGE_DIR, 'job-applications.json');
+const RESUME_DIR = path.join(STORAGE_DIR, 'resumes');
 
-// Ensure storage directory exists
-async function ensureStorageDir() {
+// Ensure storage directories exist
+async function ensureStorageDirs() {
   try {
     await fs.access(STORAGE_DIR);
   } catch (error) {
     await fs.mkdir(STORAGE_DIR, { recursive: true });
+  }
+  
+  try {
+    await fs.access(RESUME_DIR);
+  } catch (error) {
+    await fs.mkdir(RESUME_DIR, { recursive: true });
   }
 }
 
@@ -27,6 +34,7 @@ interface JobApplication {
   linkedIn: string;
   portfolio: string;
   resumeFileName: string;
+  resumeFilePath: string;
   coverLetter: string;
   heardAbout: string;
   timestamp: string;
@@ -38,7 +46,7 @@ interface JobApplication {
 // Function to get existing applications
 async function getExistingApplications(): Promise<JobApplication[]> {
   try {
-    await ensureStorageDir();
+    await ensureStorageDirs();
     
     try {
       const data = await fs.readFile(JOB_APPLICATIONS_FILE, 'utf8');
@@ -56,10 +64,42 @@ async function getExistingApplications(): Promise<JobApplication[]> {
 // Function to write applications
 async function writeApplications(applications: JobApplication[]) {
   try {
-    await ensureStorageDir();
+    await ensureStorageDirs();
     await fs.writeFile(JOB_APPLICATIONS_FILE, JSON.stringify(applications, null, 2), 'utf8');
   } catch (error) {
     console.error('Error writing job applications:', error);
+    throw new Error('Failed to save application data');
+  }
+}
+
+// Function to save resume file
+async function saveResumeFile(file: Buffer, fileName: string, applicationId: string): Promise<string> {
+  try {
+    await ensureStorageDirs();
+    
+    // Create a unique filename with application ID to prevent collisions
+    const fileExtension = path.extname(fileName);
+    const safeFileName = `${applicationId}_${Date.now()}${fileExtension}`;
+    const filePath = path.join(RESUME_DIR, safeFileName);
+    
+    // Write file to disk
+    await fs.writeFile(filePath, file);
+    
+    return safeFileName;
+  } catch (error) {
+    console.error('Error saving resume file:', error);
+    throw new Error('Failed to save resume file');
+  }
+}
+
+// Function to get resume file
+async function getResumeFile(fileName: string): Promise<Buffer | null> {
+  try {
+    const filePath = path.join(RESUME_DIR, fileName);
+    return await fs.readFile(filePath);
+  } catch (error) {
+    console.error(`Error reading resume file ${fileName}:`, error);
+    return null;
   }
 }
 
@@ -72,6 +112,7 @@ function generateId(): string {
 // POST endpoint to add a new application
 export async function POST(request: Request) {
   try {
+    console.log('Received career application submission');
     const formData = await request.formData();
     
     // Extract form fields
@@ -91,19 +132,26 @@ export async function POST(request: Request) {
     
     // Validate required fields
     if (!firstName || !lastName || !email || !resumeFile) {
+      console.log('Missing required fields:', { firstName, lastName, email, hasResume: !!resumeFile });
       return NextResponse.json(
         { error: 'Required fields are missing' },
         { status: 400 }
       );
     }
     
-    // In a real application, you would save the resume file to storage
-    // For this demo, we'll just store the filename
+    // Generate application ID
+    const applicationId = generateId();
+    
+    // Get resume file data
+    const resumeBuffer = Buffer.from(await resumeFile.arrayBuffer());
     const resumeFileName = resumeFile.name;
+    
+    // Save resume file to storage
+    const savedFileName = await saveResumeFile(resumeBuffer, resumeFileName, applicationId);
     
     // Create application entry
     const application: JobApplication = {
-      id: generateId(),
+      id: applicationId,
       jobId,
       jobTitle,
       firstName,
@@ -112,7 +160,8 @@ export async function POST(request: Request) {
       phone,
       linkedIn,
       portfolio,
-      resumeFileName,
+      resumeFileName: resumeFileName, // Original filename
+      resumeFilePath: savedFileName,   // Saved filename
       coverLetter,
       heardAbout,
       timestamp: new Date().toISOString(),
@@ -121,6 +170,8 @@ export async function POST(request: Request) {
       status: 'new'
     };
     
+    console.log(`Application created with ID: ${applicationId}`);
+    
     // Get existing applications and add new entry
     const applications = await getExistingApplications();
     applications.unshift(application); // Add new entry to the beginning for newest-first ordering
@@ -128,11 +179,17 @@ export async function POST(request: Request) {
     // Write updated applications
     await writeApplications(applications);
     
-    return NextResponse.json({ success: true, id: application.id });
+    console.log('Successfully saved application data');
+    
+    return NextResponse.json({ 
+      success: true, 
+      id: application.id,
+      message: "Application submitted successfully"
+    });
   } catch (error) {
     console.error('Error handling job application:', error);
     return NextResponse.json(
-      { error: 'Failed to process job application' },
+      { error: 'Failed to process job application', message: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
@@ -158,6 +215,8 @@ export async function GET(request: Request) {
     const status = url.searchParams.get('status');
     const startDate = url.searchParams.get('startDate');
     const endDate = url.searchParams.get('endDate');
+    const includeResume = url.searchParams.get('includeResume') === 'true';
+    const format = url.searchParams.get('format') || 'json';
     
     // Get applications
     const applications = await getExistingApplications();
@@ -195,6 +254,35 @@ export async function GET(request: Request) {
       );
     }
     
+    // Include resume files if requested
+    if (includeResume && id) {
+      // Only include resume for single application
+      if (filteredApplications.length === 1) {
+        const app = filteredApplications[0];
+        const resumeData = await getResumeFile(app.resumeFilePath);
+        
+        if (resumeData) {
+          // If format is 'download', return the file directly
+          if (format === 'download') {
+            return new Response(resumeData, {
+              headers: {
+                'Content-Type': getContentType(app.resumeFileName),
+                'Content-Disposition': `attachment; filename="${app.resumeFileName}"`,
+              },
+            });
+          }
+          
+          // For JSON format, encode the file as base64
+          return NextResponse.json({
+            application: app,
+            resumeData: resumeData.toString('base64'),
+            resumeFileName: app.resumeFileName
+          });
+        }
+      }
+    }
+    
+    // Return applications in the requested format
     return NextResponse.json({ 
       applications: filteredApplications,
       total: filteredApplications.length
@@ -205,6 +293,22 @@ export async function GET(request: Request) {
       { error: 'Failed to retrieve job applications' },
       { status: 500 }
     );
+  }
+}
+
+// Determine content type based on file extension
+function getContentType(fileName: string): string {
+  const extension = path.extname(fileName).toLowerCase();
+  
+  switch (extension) {
+    case '.pdf':
+      return 'application/pdf';
+    case '.doc':
+      return 'application/msword';
+    case '.docx':
+      return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    default:
+      return 'application/octet-stream';
   }
 }
 
