@@ -154,10 +154,10 @@ export default function JobApplicationsAdmin() {
   };
 
   // Get unique job titles for filter
-  const jobTitles = [...new Set(applications
+  const jobTitles = Array.from(new Set(applications
     .filter(app => app.jobTitle)
     .map(app => app.jobTitle as string)
-  )];
+  ));
 
   // Get status badge color
   const getStatusBadgeColor = (status: JobApplication['status']) => {
