@@ -68,7 +68,7 @@ export default function ContactSubmissionsAdmin() {
       // Client-side filtering by service if needed
       if (filterService) {
         filteredSubmissions = filteredSubmissions.filter(
-          submission => submission.service.toLowerCase().includes(filterService.toLowerCase())
+          (submission: ContactSubmission) => submission.service.toLowerCase().includes(filterService.toLowerCase())
         );
       }
       
