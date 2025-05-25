@@ -103,7 +103,7 @@ export async function sendMessageAndGetResponse(threadId: string, message: strin
 export async function streamAssistantResponse(threadId: string, onUpdate: (content: string) => void) {
   try {
     // Get the full response from the last message in the thread
-    const message = document.getElementById('chat-input')?.value || '';
+    const message = (document.getElementById('chat-input') as (HTMLInputElement | HTMLTextAreaElement) | null)?.value || '';
     const fullResponse = await sendMessageAndGetResponse(threadId, message);
     
     if (!fullResponse) {
