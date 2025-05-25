@@ -5,16 +5,14 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        - OPENAI_API_KEY=${OPENAI_API_KEY}
-        - OPENAI_ASSISTANT_ID=${OPENAI_ASSISTANT_ID}
     ports:
       - "80:3000"
     environment:
       - NODE_ENV=production
-      - ADMIN_API_KEY=${ADMIN_API_KEY}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - OPENAI_ASSISTANT_ID=${OPENAI_ASSISTANT_ID}
+    secrets:
+      - openai_api_key
+      - openai_assistant_id
+      - admin_api_key
     volumes:
       - ./logs:/app/logs
     restart: unless-stopped
@@ -29,4 +27,12 @@ services:
 
 networks:
   web:
-    driver: bridge 
+    driver: bridge
+
+secrets:
+  openai_api_key:
+    file: ./secrets/openai_api_key.txt
+  openai_assistant_id:
+    file: ./secrets/openai_assistant_id.txt
+  admin_api_key:
+    file: ./secrets/admin_api_key.txt 
