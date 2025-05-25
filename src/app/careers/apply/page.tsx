@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { motion } from 'framer-motion';
 
-export default function JobApplicationPage() {
+function JobApplicationForm() {
   const searchParams = useSearchParams();
   const jobId = searchParams.get('job');
   
@@ -364,5 +364,17 @@ export default function JobApplicationPage() {
       
       <Footer />
     </main>
+  );
+}
+
+export default function JobApplicationPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+      </div>
+    }>
+      <JobApplicationForm />
+    </Suspense>
   );
 } 
