@@ -81,7 +81,7 @@ export default function JobApplicationsAdmin() {
       // Client-side filtering by job title if needed
       if (jobTitleFilter) {
         filteredApplications = filteredApplications.filter(
-          app => app.jobTitle && app.jobTitle.toLowerCase().includes(jobTitleFilter.toLowerCase())
+          (app: JobApplication) => app.jobTitle && app.jobTitle.toLowerCase().includes(jobTitleFilter.toLowerCase())
         );
       }
       
