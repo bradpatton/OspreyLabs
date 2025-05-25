@@ -2,14 +2,23 @@ import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { ASSISTANT_PROMPT } from '@/utils/openai';
 
-// Initialize the OpenAI client with the API key from environment variables
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy initialization of OpenAI client
+function getOpenAIClient() {
+  const apiKey = process.env.OPENAI_API_KEY;
+  
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY environment variable is not set');
+  }
+  
+  return new OpenAI({
+    apiKey: apiKey,
+  });
+}
 
 // Create or get an assistant
 async function getOrCreateAssistant() {
   const assistantId = process.env.OPENAI_ASSISTANT_ID;
+  const openai = getOpenAIClient();
   
   // If we have an assistant ID, use it
   if (assistantId) {
@@ -40,6 +49,16 @@ async function getOrCreateAssistant() {
 // API route handler for creating a thread
 export async function POST(request: Request) {
   try {
+    // Check if API key is available
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json(
+        { error: 'OpenAI API key is not configured' },
+        { status: 500 }
+      );
+    }
+
+    const openai = getOpenAIClient();
+    
     // Ensure we have the assistant ID
     const assistantId = await getOrCreateAssistant();
     
@@ -62,6 +81,15 @@ export async function POST(request: Request) {
 // API route for sending a message and getting a response
 export async function PUT(request: Request) {
   try {
+    // Check if API key is available
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json(
+        { error: 'OpenAI API key is not configured' },
+        { status: 500 }
+      );
+    }
+
+    const openai = getOpenAIClient();
     const { threadId, message } = await request.json();
     
     if (!threadId || !message) {
