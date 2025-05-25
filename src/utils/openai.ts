@@ -1,14 +1,5 @@
 import OpenAI from 'openai';
 
-// Initialize the OpenAI client with the API key from environment variables
-const openai = new OpenAI({
-  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY || process.env.OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true // Needed for client-side usage
-});
-
-// Get the assistant ID from environment variables
-const assistantId = process.env.NEXT_PUBLIC_OPENAI_ASSISTANT_ID || process.env.OPENAI_ASSISTANT_ID;
-
 // The custom instructions for the assistant
 export const ASSISTANT_PROMPT = `
 You are Theo, the AI assistant for Osprey Labs, a company specializing in AI automation and custom software development.
