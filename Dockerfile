@@ -12,6 +12,12 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Set build-time environment variables
+ARG OPENAI_API_KEY
+ARG OPENAI_ASSISTANT_ID
+ENV OPENAI_API_KEY=${OPENAI_API_KEY}
+ENV OPENAI_ASSISTANT_ID=${OPENAI_ASSISTANT_ID}
+
 # Build application
 RUN npm run build
 
