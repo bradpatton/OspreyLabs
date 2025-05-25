@@ -2,8 +2,18 @@
 
 import { useState } from 'react';
 
+interface ApiTestResult {
+  status: number;
+  statusText: string;
+  data: {
+    success?: boolean;
+    error?: string;
+    id?: string;
+  };
+}
+
 export default function ContactApiTest() {
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<ApiTestResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
