@@ -36,4 +36,7 @@ next-env.d.ts
 # Secrets
 secrets/
 *.txt
-!public/*.txt 
+!public/*.txt
+
+# Article data (use database in production)
+data/ 
