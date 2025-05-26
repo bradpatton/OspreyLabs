@@ -3,13 +3,12 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Article, CreateArticleRequest } from '@/types/article';
+import AdminAuth from '@/components/AdminAuth';
 
 export default function AdminArticlesPage() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [adminKey, setAdminKey] = useState('');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [formData, setFormData] = useState<CreateArticleRequest>({
@@ -23,20 +22,18 @@ export default function AdminArticlesPage() {
   });
 
   useEffect(() => {
-    // Check if admin key is stored in localStorage
-    const storedKey = localStorage.getItem('adminKey');
-    if (storedKey) {
-      setAdminKey(storedKey);
-      setIsAuthenticated(true);
-      fetchArticles(storedKey);
-    }
+    fetchArticles();
   }, []);
 
-  const fetchArticles = async (key?: string) => {
+  const getAdminKey = () => {
+    return localStorage.getItem('adminKey') || '';
+  };
+
+  const fetchArticles = async () => {
     try {
       const response = await fetch('/api/articles', {
         headers: {
-          'x-admin-key': key || adminKey,
+          'x-admin-key': getAdminKey(),
         },
       });
       if (!response.ok) {
@@ -50,22 +47,6 @@ export default function AdminArticlesPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (adminKey) {
-      localStorage.setItem('adminKey', adminKey);
-      setIsAuthenticated(true);
-      fetchArticles(adminKey);
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('adminKey');
-    setAdminKey('');
-    setIsAuthenticated(false);
-    setArticles([]);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -83,7 +64,7 @@ export default function AdminArticlesPage() {
         method,
         headers: {
           'Content-Type': 'application/json',
-          'x-admin-key': adminKey,
+          'x-admin-key': getAdminKey(),
         },
         body: JSON.stringify(body),
       });
@@ -120,7 +101,7 @@ export default function AdminArticlesPage() {
       const response = await fetch(`/api/articles?id=${id}`, {
         method: 'DELETE',
         headers: {
-          'x-admin-key': adminKey,
+          'x-admin-key': getAdminKey(),
         },
       });
 
@@ -177,59 +158,20 @@ export default function AdminArticlesPage() {
     });
   };
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
-          <h1 className="text-2xl font-bold mb-6 text-center">Admin Login</h1>
-          <form onSubmit={handleLogin}>
-            <div className="mb-4">
-              <label htmlFor="adminKey" className="block text-sm font-medium text-gray-700 mb-2">
-                Admin Key
-              </label>
-              <input
-                type="password"
-                id="adminKey"
-                value={adminKey}
-                onChange={(e) => setAdminKey(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              className="w-full btn btn-primary"
-            >
-              Login
-            </button>
-          </form>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50">
+    <AdminAuth>
       <div className="container py-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold">Article Management</h1>
-          <div className="flex gap-4">
-            <button
-              onClick={() => {
-                resetForm();
-                setShowForm(true);
-              }}
-              className="btn btn-primary"
-            >
-              New Article
-            </button>
-            <button
-              onClick={handleLogout}
-              className="btn btn-outline"
-            >
-              Logout
-            </button>
-          </div>
+          <button
+            onClick={() => {
+              resetForm();
+              setShowForm(true);
+            }}
+            className="btn btn-primary"
+          >
+            New Article
+          </button>
         </div>
 
         {error && (
@@ -321,14 +263,14 @@ export default function AdminArticlesPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tags (comma-separated)
+                    Tags
                   </label>
                   <input
                     type="text"
                     value={formData.tags.join(', ')}
                     onChange={handleTagsChange}
                     className="w-full p-2 border border-gray-300 rounded"
-                    placeholder="AI, Technology, Tutorial"
+                    placeholder="AI, Technology, Business"
                   />
                 </div>
                 <div>
@@ -340,7 +282,7 @@ export default function AdminArticlesPage() {
                     value={formData.featuredImage}
                     onChange={(e) => setFormData({ ...formData, featuredImage: e.target.value })}
                     className="w-full p-2 border border-gray-300 rounded"
-                    placeholder="/images/example.jpg or https://example.com/image.jpg"
+                    placeholder="/images/article.jpg or https://..."
                   />
                 </div>
               </div>
@@ -348,10 +290,10 @@ export default function AdminArticlesPage() {
               <div className="flex gap-4">
                 <button
                   type="submit"
-                  disabled={loading}
                   className="btn btn-primary"
+                  disabled={loading}
                 >
-                  {loading ? 'Saving...' : (editingArticle ? 'Update' : 'Create')}
+                  {loading ? 'Saving...' : (editingArticle ? 'Update Article' : 'Create Article')}
                 </button>
                 <button
                   type="button"
@@ -368,77 +310,97 @@ export default function AdminArticlesPage() {
           </motion.div>
         )}
 
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Title
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Author
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Published
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {articles.map((article) => (
-                  <tr key={article.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{article.title}</div>
-                      <div className="text-sm text-gray-500">{article.slug}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {article.author}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        article.status === 'published' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {article.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(article.publishedAt)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button
-                        onClick={() => handleEdit(article)}
-                        className="text-indigo-600 hover:text-indigo-900 mr-4"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(article.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {loading && !showForm ? (
+          <div className="flex justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
           </div>
-          
-          {articles.length === 0 && !loading && (
-            <div className="text-center py-8">
-              <p className="text-gray-500">No articles found. Create your first article!</p>
+        ) : (
+          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Title
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Author
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Published
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {articles.map((article) => (
+                    <tr key={article.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {article.title}
+                          </div>
+                          <div className="text-sm text-gray-500 line-clamp-2">
+                            {article.excerpt}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        {article.author}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          article.status === 'published' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {article.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500">
+                        {formatDate(article.publishedAt)}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-medium space-x-2">
+                        <button
+                          onClick={() => handleEdit(article)}
+                          className="text-primary-600 hover:text-primary-900"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(article.id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          Delete
+                        </button>
+                        <a
+                          href={`/articles/${article.slug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-gray-600 hover:text-gray-900"
+                        >
+                          View
+                        </a>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          )}
-        </div>
+            
+            {articles.length === 0 && !loading && (
+              <div className="text-center py-12">
+                <p className="text-gray-500">No articles found. Create your first article!</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
-    </div>
+    </AdminAuth>
   );
 } 

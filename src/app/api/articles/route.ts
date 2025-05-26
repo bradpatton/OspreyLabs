@@ -60,7 +60,9 @@ function saveArticles(articles: Article[]): void {
 // Verify admin API key
 function verifyAdminKey(request: Request): boolean {
   const adminKey = request.headers.get('x-admin-key');
-  return adminKey === process.env.ADMIN_API_KEY;
+  const expectedKey = process.env.ADMIN_API_KEY;
+  
+  return adminKey === expectedKey;
 }
 
 // GET - Fetch all articles or a specific article
