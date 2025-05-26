@@ -123,7 +123,7 @@ export default function CTA() {
                     </div>
                     <div className="ml-4">
                       <p className="font-medium">Email us</p>
-                      <p className="mt-1 opacity-80">brad@ospreylabratories.com</p>
+                      <p className="mt-1 opacity-80">brad@ospreylaboratories.com</p>
                     </div>
                   </div>
                   
