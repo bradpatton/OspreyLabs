@@ -1,4 +1,4 @@
-import { Pool, PoolClient, QueryResult } from 'pg';
+import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
 
 // Database configuration
 const dbConfig = {
@@ -30,7 +30,7 @@ export function getPool(): Pool {
 }
 
 // Helper function to execute queries
-export async function query<T = any>(
+export async function query<T extends QueryResultRow = any>(
   text: string, 
   params?: any[]
 ): Promise<QueryResult<T>> {

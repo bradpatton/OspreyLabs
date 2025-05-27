@@ -29,6 +29,28 @@ export interface AdminSession {
   user_agent?: string;
 }
 
+// Interface for the joined query result
+interface SessionWithUserData {
+  // Session fields
+  id: string;
+  user_id: string;
+  session_token: string;
+  api_key: string;
+  expires_at: string;
+  created_at: string;
+  last_accessed: string;
+  ip_address?: string;
+  user_agent?: string;
+  // User fields with aliases
+  username: string;
+  email: string;
+  role: 'admin' | 'super_admin';
+  is_active: boolean;
+  user_created_at: string;
+  user_updated_at: string;
+  last_login?: string;
+}
+
 export interface LoginCredentials {
   username: string;
   password: string;
@@ -54,9 +76,9 @@ export class AuthService {
     return bcrypt.compare(password, hash);
   }
 
-  // Generate secure API key
+  // Generate API key
   static generateApiKey(): string {
-    return `osprey-${uuidv4()}-${Date.now()}`;
+    return `osprey-${uuidv4().replace(/-/g, '')}`;
   }
 
   // Generate session token
@@ -64,29 +86,16 @@ export class AuthService {
     return uuidv4();
   }
 
-  // Create new admin user
+  // Create new user
   static async createUser(userData: CreateUserData): Promise<AdminUser> {
     const { username, email, password, role = 'admin' } = userData;
-    
-    // Check if user already exists
-    const existingUser = await query(
-      'SELECT id FROM admin_users WHERE username = $1 OR email = $2',
-      [username, email]
-    );
-
-    if (existingUser.rows.length > 0) {
-      throw new Error('User with this username or email already exists');
-    }
-
-    // Hash password and generate API key
     const passwordHash = await this.hashPassword(password);
     const apiKey = this.generateApiKey();
 
-    // Insert new user
     const result = await query<AdminUser>(
       `INSERT INTO admin_users (username, email, password_hash, api_key, role)
        VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, username, email, role, is_active, created_at, updated_at`,
+       RETURNING id, username, email, role, is_active, created_at, updated_at, last_login`,
       [username, email, passwordHash, apiKey, role]
     );
 
@@ -97,9 +106,8 @@ export class AuthService {
   static async authenticateUser(credentials: LoginCredentials): Promise<AdminUserWithApiKey | null> {
     const { username, password } = credentials;
 
-    // Get user by username
     const result = await query<AdminUserWithApiKey & { password_hash: string }>(
-      'SELECT * FROM admin_users WHERE username = $1 AND is_active = true',
+      'SELECT id, username, email, password_hash, role, is_active, created_at, updated_at, last_login, api_key FROM admin_users WHERE username = $1 AND is_active = true',
       [username]
     );
 
@@ -108,9 +116,8 @@ export class AuthService {
     }
 
     const user = result.rows[0];
-
-    // Verify password
     const isValidPassword = await this.verifyPassword(password, user.password_hash);
+
     if (!isValidPassword) {
       return null;
     }
@@ -121,17 +128,13 @@ export class AuthService {
       [user.id]
     );
 
-    // Return user without password hash
+    // Remove password_hash from returned user object
     const { password_hash, ...userWithoutPassword } = user;
     return userWithoutPassword;
   }
 
   // Validate API key
   static async validateApiKey(apiKey: string): Promise<AdminUser | null> {
-    if (!apiKey) {
-      return null;
-    }
-
     const result = await query<AdminUser>(
       'SELECT id, username, email, role, is_active, created_at, updated_at, last_login FROM admin_users WHERE api_key = $1 AND is_active = true',
       [apiKey]
@@ -173,10 +176,9 @@ export class AuthService {
 
   // Validate session token
   static async validateSession(sessionToken: string): Promise<{ user: AdminUser; session: AdminSession } | null> {
-    const result = await query<AdminSession & AdminUser>(
+    const result = await query<SessionWithUserData>(
       `SELECT 
          s.*,
-         u.id as user_id,
          u.username,
          u.email,
          u.role,

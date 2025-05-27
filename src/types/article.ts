@@ -7,10 +7,11 @@ export interface Article {
   author: string;
   publishedAt: string;
   updatedAt: string;
-  status: 'draft' | 'published';
+  status: 'draft' | 'published' | 'archived';
   tags: string[];
   featuredImage?: string;
   readTime: number;
+  createdAt?: string;
 }
 
 export interface CreateArticleRequest {
@@ -18,7 +19,7 @@ export interface CreateArticleRequest {
   excerpt: string;
   content: string;
   author: string;
-  status: 'draft' | 'published';
+  status: 'draft' | 'published' | 'archived';
   tags: string[];
   featuredImage?: string;
 }

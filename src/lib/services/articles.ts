@@ -271,7 +271,7 @@ export class ArticlesService {
 
   // Get articles by tag
   static async getArticlesByTag(tag: string, limit?: number): Promise<Article[]> {
-    const params = [tag];
+    const params: any[] = [tag];
     let limitClause = '';
 
     if (limit) {
