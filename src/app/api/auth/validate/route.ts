@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import AuthService from '@/lib/auth';
 
+// Force this route to be dynamic (not pre-rendered during build)
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 // POST - Validate admin key or session token
 export async function POST(request: Request) {
   try {

@@ -3,6 +3,10 @@ import AuthService from '@/lib/auth';
 import ArticlesService from '@/lib/services/articles';
 import { CreateArticleRequest } from '@/types/article';
 
+// Force this route to be dynamic (not pre-rendered during build)
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 // Helper function to verify admin authentication
 async function verifyAdminAuth(request: Request): Promise<{ isValid: boolean; user?: any }> {
   const adminKey = request.headers.get('x-admin-key');

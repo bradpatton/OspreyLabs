@@ -5,6 +5,10 @@ import ContactSubmissionsService from '@/lib/services/contactSubmissions';
 import JobApplicationsService from '@/lib/services/jobApplications';
 import ChatLogsService from '@/lib/services/chatLogs';
 
+// Force this route to be dynamic (not pre-rendered during build)
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 // Helper function to verify admin authentication
 async function verifyAdminAuth(request: Request): Promise<{ isValid: boolean; user?: any }> {
   const adminKey = request.headers.get('x-admin-key');

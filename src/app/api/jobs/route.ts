@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server';
 import AuthService from '@/lib/auth';
 import JobApplicationsService from '@/lib/services/jobApplications';
 
+// Force this route to be dynamic (not pre-rendered during build)
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 // Helper function to verify admin authentication
 async function verifyAdminAuth(request: Request): Promise<{ isValid: boolean; user?: any }> {
   const adminKey = request.headers.get('x-admin-key');

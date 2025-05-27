@@ -3,6 +3,10 @@ import OpenAI from 'openai';
 import { ASSISTANT_PROMPT } from '@/utils/openai';
 import ChatLogsService from '@/lib/services/chatLogs';
 
+// Force this route to be dynamic (not pre-rendered during build)
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 // Lazy initialization of OpenAI client
 function getOpenAIClient() {
   const apiKey = process.env.OPENAI_API_KEY;
