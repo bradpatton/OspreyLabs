@@ -9,7 +9,7 @@ The application now uses:
 - **PostgreSQL 15** for data persistence
 - **Docker & Docker Compose** for containerization
 - **Database-based authentication** (no more file-based storage)
-
+Hello
 ## Prerequisites
 
 - Docker 20.x or later
