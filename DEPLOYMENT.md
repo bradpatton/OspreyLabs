@@ -1,217 +1,383 @@
 # Osprey Labs Website Deployment Instructions
 
-Below are complete instructions for deploying the Osprey Labs website application to production, including all necessary configuration steps and requirements.
+Complete instructions for deploying the Osprey Labs website application to production with PostgreSQL database backend.
+
+## Architecture Overview
+
+The application now uses:
+- **Next.js 14** for the web application
+- **PostgreSQL 15** for data persistence
+- **Docker & Docker Compose** for containerization
+- **Database-based authentication** (no more file-based storage)
 
 ## Prerequisites
 
-- Node.js 18.x or later
-- npm 9.x or later
+- Docker 20.x or later
+- Docker Compose 2.x or later
 - Git
-- A Vercel, Netlify, or similar hosting account
-- An OpenAI API key for the assistant functionality
+- OpenSSL (for generating secrets)
+- curl (for health checks)
 
-## Local Development Setup
+## Quick Start (Production)
 
-1. Clone the repository:
+1. **Clone and setup:**
    ```bash
    git clone <repository-url>
    cd osprey_page
    ```
 
-2. Install dependencies:
+2. **Setup secrets:**
    ```bash
-   npm install
+   chmod +x scripts/setup-secrets.sh
+   ./scripts/setup-secrets.sh
    ```
 
-3. Create environment variables file:
+3. **Create production environment:**
    ```bash
-   touch .env.local
+   cp env.template .env.production
+   # Edit .env.production with your production values
    ```
 
-4. Add the following environment variables to `.env.local`:
-   ```
-   # OpenAI API key for the assistant functionality
-   OPENAI_API_KEY=sk-your-openai-api-key
-   
-   # Admin API key for protected routes
-   ADMIN_API_KEY=your-admin-secret-key
-   
-   # Assistant ID from OpenAI
-   OPENAI_ASSISTANT_ID=asst_your-assistant-id
-   ```
-
-5. Start the development server:
+4. **Deploy:**
    ```bash
-   npm run dev
+   chmod +x scripts/deploy-production.sh
+   ./scripts/deploy-production.sh
    ```
 
-## Directory Structure Setup
+## Detailed Setup Instructions
 
-Ensure these directories exist for proper application functionality:
+### 1. Environment Configuration
+
+Create `.env.production` with these variables:
 
 ```bash
-# Create logs directory for contact form submissions and chat logs
-mkdir -p logs
+# OpenAI Configuration
+OPENAI_API_KEY=sk-your-openai-api-key-here
 
-# Create public directories for media assets
-mkdir -p public/images
-mkdir -p public/sounds
+# Database Configuration (Production)
+DB_HOST=postgres
+DB_PORT=5432
+DB_NAME=osprey_labs
+DB_USER=osprey_user
+DB_PASSWORD=your-secure-production-password
 
-# Set correct permissions
-chmod 755 logs
-chmod 755 public/images
-chmod 755 public/sounds
+# Application Configuration
+NODE_ENV=production
+NEXTAUTH_SECRET=your-generated-nextauth-secret
+NEXTAUTH_URL=https://your-domain.com
 ```
 
-## Production Deployment
+### 2. Security Setup
 
-### Option 1: Vercel Deployment (Recommended)
+**Generate secure passwords:**
+```bash
+# Generate a secure database password
+openssl rand -base64 32
 
-1. Install Vercel CLI:
-   ```bash
-   npm install -g vercel
-   ```
+# Generate NextAuth secret (done automatically by setup-secrets.sh)
+openssl rand -base64 32
+```
 
-2. Link your project to Vercel:
-   ```bash
-   vercel login
-   vercel link
-   ```
+**Update default admin credentials:**
+After deployment, immediately:
+1. Go to `http://your-domain/admin`
+2. Login with `admin` / `admin123`
+3. Change the password in the admin panel
 
-3. Add environment variables to Vercel:
-   ```bash
-   vercel env add OPENAI_API_KEY
-   vercel env add ADMIN_API_KEY
-   vercel env add OPENAI_ASSISTANT_ID
-   ```
+### 3. Database Architecture
 
-4. Deploy to production:
-   ```bash
-   vercel --prod
-   ```
+The application includes these database tables:
+- **admin_users**: User accounts with bcrypt password hashing
+- **admin_sessions**: Session management with tokens
+- **articles**: Blog articles and content management
+- **contact_submissions**: Contact form submissions
+- **job_applications**: Job application data
+- **chat_logs**: AI assistant conversation logs
 
-### Option 2: Self-Hosted Deployment
+All data is automatically initialized on first startup.
 
-1. Build the application:
-   ```bash
-   npm run build
-   ```
+## Deployment Options
 
-2. Start the production server:
-   ```bash
-   npm start
-   ```
+### Option 1: Docker Production Deployment (Recommended)
 
-3. For a more robust setup, use PM2:
-   ```bash
-   npm install -g pm2
-   pm2 start npm --name "osprey-labs" -- start
-   pm2 save
-   pm2 startup
-   ```
+**Single command deployment:**
+```bash
+./scripts/deploy-production.sh
+```
 
-## Configuration Details
+**Manual deployment:**
+```bash
+# Build and start services
+docker-compose -f docker-compose.prod.yml up -d --build
 
-### OpenAI Assistant Configuration
+# Check status
+docker-compose -f docker-compose.prod.yml ps
 
-1. Create an assistant in the OpenAI dashboard with these instructions:
-   ```
-   You are Theo, the Osprey Labs AI assistant. Be helpful, concise, and friendly while answering questions about the company's services.
-   
-   Key information to remember:
-   - Osprey Labs provides AI Automation, Custom Software Development, and Mobile App Development services
-   - Pricing starts at $3,999 for starter packages and $8,999 for professional packages
-   - Contact email: info@ospreylabs.com
-   - Phone: [Company Phone]
-   - Office location: 410 E. Beach Drive, Panama City, FL 32401
-   
-   When asked about specific services, provide concrete examples and benefits. Always maintain a professional yet conversational tone.
-   ```
+# View logs
+docker-compose -f docker-compose.prod.yml logs -f
+```
 
-2. Add knowledge files to your assistant if needed for more detailed responses.
-
-3. Save your Assistant ID and add it to your environment variables.
-
-### File System Requirements
-
-Ensure these files have the correct permissions for production:
+### Option 2: Development Environment
 
 ```bash
-# Create and set permissions for contact submissions file
-touch logs/contact-submissions.json
-chmod 644 logs/contact-submissions.json
+# Start development environment
+docker-compose up -d
 
-# Create and set permissions for chat logs file
-touch logs/chat-logs.json
-chmod 644 logs/chat-logs.json
-
-# Add notification sound for chat popup
-curl -o public/sounds/notification.mp3 https://assets.mixkit.co/active_storage/sfx/2866/2866-preview.mp3
-chmod 644 public/sounds/notification.mp3
+# The app will be available on http://localhost:3000
+# Database will be on port 5434 (to avoid conflicts)
 ```
 
-## Known Issues and Troubleshooting
+### Option 3: Cloud Platform Deployment
 
-Based on the development logs, watch for these common issues:
+For platforms like AWS, GCP, or Azure:
 
-### Image Path Issues
-- Images in `/public` directory should be referenced without the `/public/` prefix in the code.
-- Example error observed: `GET /public/images/business-automation.jpg 404`
-- Fix by updating image paths from `/public/images/file.jpg` to `/images/file.jpg`
-
-### Notification Sound Not Found
-- Error observed: `GET /sounds/notification.mp3 416`
-- Ensure the notification sound file exists at the correct path
-- Run: `curl -o public/sounds/notification.mp3 https://assets.mixkit.co/active_storage/sfx/2866/2866-preview.mp3`
-
-### Syntax Errors in Components
-- Watch for unexpected token errors in components like Footer.tsx
-- These usually indicate missing export statements or syntax issues
-
-### API Connection Issues
-- If the chat assistant fails to connect, check your OPENAI_API_KEY and OPENAI_ASSISTANT_ID.
-- Verify the API key has sufficient permissions and quota.
-- Check API response logs for troubleshooting
-
-## Post-Deployment Verification
-
-After deployment, verify these critical components:
-
-1. **Chat Assistant:** Check that the chat assistant loads, opens automatically after 25 seconds, and properly connects to the OpenAI API.
-
-2. **Contact Form:** Test the contact form to ensure submissions are saved properly to `logs/contact-submissions.json`.
-
-3. **Image Loading:** Verify all images load correctly, especially service images from the `/public/images/` directory.
-
-4. **Sound Files:** Test that notification sounds play when the chat window opens automatically.
-
-## Maintenance and Updates
-
-1. Regularly backup the logs directory containing user submissions.
-
-2. Update dependencies with:
+1. **Build the Docker image:**
    ```bash
-   npm outdated
-   npm update
+   docker build -t osprey-labs .
    ```
 
-3. For major updates, test thoroughly in a staging environment before deploying to production.
+2. **Push to your container registry:**
+   ```bash
+   docker tag osprey-labs your-registry/osprey-labs:latest
+   docker push your-registry/osprey-labs:latest
+   ```
 
-## Development Port Configuration
+3. **Deploy with your cloud provider's container service**
 
-The application will attempt to use port 3000 by default, falling back to other ports (3001, 3002, etc.) if these are already in use.
+4. **Set up managed PostgreSQL database**
+
+5. **Configure environment variables in your cloud platform**
+
+## Health Monitoring
+
+The application includes comprehensive health checks:
+
+**Health endpoint:** `GET /api/health`
+
+Response format:
+```json
+{
+  "status": "healthy",
+  "timestamp": "2024-01-01T00:00:00.000Z",
+  "database": "connected",
+  "version": "1.0.0"
+}
+```
+
+**Docker health checks:**
+- Web application: HTTP check on `/api/health`
+- PostgreSQL: `pg_isready` command
+- Automatic restart on failure
+
+## Database Management
+
+### Backup Database
+```bash
+# Create backup
+docker-compose -f docker-compose.prod.yml exec postgres pg_dump -U osprey_user osprey_labs > backup.sql
+
+# Restore backup
+docker-compose -f docker-compose.prod.yml exec -T postgres psql -U osprey_user -d osprey_labs < backup.sql
+```
+
+### Access Database
+```bash
+# Connect to database
+docker-compose -f docker-compose.prod.yml exec postgres psql -U osprey_user -d osprey_labs
+
+# View tables
+\dt
+
+# View admin users
+SELECT username, email, role, created_at FROM admin_users;
+```
+
+### Reset Admin Password
+```bash
+# Connect to database and run:
+UPDATE admin_users 
+SET password_hash = '$2b$12$FUnAHWm3NWmH7M5AS0Bhnu4DtuUbgBHD4p2hs6KG6URoPYjsn/b6W' 
+WHERE username = 'admin';
+# This resets password to 'admin123'
+```
+
+## Monitoring and Maintenance
+
+### View Application Logs
+```bash
+# All services
+docker-compose -f docker-compose.prod.yml logs -f
+
+# Specific service
+docker-compose -f docker-compose.prod.yml logs -f web
+docker-compose -f docker-compose.prod.yml logs -f postgres
+```
+
+### Performance Monitoring
+```bash
+# Container resource usage
+docker stats
+
+# Database performance
+docker-compose -f docker-compose.prod.yml exec postgres psql -U osprey_user -d osprey_labs -c "
+SELECT 
+  schemaname,
+  tablename,
+  n_tup_ins as inserts,
+  n_tup_upd as updates,
+  n_tup_del as deletes
+FROM pg_stat_user_tables;
+"
+```
+
+### Update Application
+```bash
+# Pull latest changes
+git pull origin main
+
+# Rebuild and restart
+docker-compose -f docker-compose.prod.yml up -d --build
+
+# Check health
+curl http://localhost/api/health
+```
+
+## Troubleshooting
+
+### Common Issues
+
+**Database connection failed:**
+```bash
+# Check database status
+docker-compose -f docker-compose.prod.yml exec postgres pg_isready -U osprey_user -d osprey_labs
+
+# Check database logs
+docker-compose -f docker-compose.prod.yml logs postgres
+```
+
+**Application won't start:**
+```bash
+# Check application logs
+docker-compose -f docker-compose.prod.yml logs web
+
+# Verify environment variables
+docker-compose -f docker-compose.prod.yml exec web env | grep -E "(DB_|OPENAI_|NEXTAUTH_)"
+```
+
+**Health check failing:**
+```bash
+# Test health endpoint manually
+curl -v http://localhost/api/health
+
+# Check if database is accessible from web container
+docker-compose -f docker-compose.prod.yml exec web nc -zv postgres 5432
+```
+
+### Recovery Procedures
+
+**Complete reset:**
+```bash
+# Stop all services
+docker-compose -f docker-compose.prod.yml down
+
+# Remove volumes (WARNING: This deletes all data)
+docker-compose -f docker-compose.prod.yml down -v
+
+# Restart fresh
+docker-compose -f docker-compose.prod.yml up -d --build
+```
+
+**Database only reset:**
+```bash
+# Stop services
+docker-compose -f docker-compose.prod.yml down
+
+# Remove only database volume
+docker volume rm osprey_page_postgres_data
+
+# Restart (database will reinitialize)
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+## Security Considerations
+
+### Production Security Checklist
+
+- [ ] Change default admin password
+- [ ] Use strong database passwords
+- [ ] Set secure NEXTAUTH_SECRET
+- [ ] Configure HTTPS/SSL termination
+- [ ] Set up firewall rules
+- [ ] Enable database connection encryption
+- [ ] Regular security updates
+- [ ] Monitor access logs
+- [ ] Backup encryption
+
+### Network Security
+```bash
+# The application uses internal Docker networks
+# Only expose necessary ports:
+# - Port 80/443: Web application
+# - Port 5432: Database (only if external access needed)
+```
 
 ## API Endpoints
 
-The application exposes these API endpoints:
+The application exposes these endpoints:
 
-- `/api/assistant` - Handles chat assistant communication with OpenAI
-- `/api/chat-logs` - Logs chat interactions
-- `/api/contact` - Processes contact form submissions
-- `/api/careers` - Handles career applications
+- `GET /api/health` - Health check
+- `POST /api/auth/login` - Admin authentication
+- `POST /api/auth/logout` - Session termination
+- `GET /api/articles` - Article management
+- `POST /api/contact` - Contact form submissions
+- `POST /api/jobs` - Job applications
+- `GET /api/chat-logs` - Chat conversation logs
+- `GET /api/admin/stats` - Admin dashboard statistics
 
-## Performance Considerations
+## Performance Optimization
 
-- The build process may take several minutes to complete
-- Average API response time for the assistant is 1-3 seconds
-- Initial page load time should be under 800ms for optimal performance 
+### Production Optimizations
+
+- **Next.js standalone build** for minimal container size
+- **PostgreSQL connection pooling** for database efficiency
+- **Health checks** for automatic recovery
+- **Multi-stage Docker builds** for optimized images
+- **Volume persistence** for data durability
+
+### Scaling Considerations
+
+For high-traffic deployments:
+- Use managed PostgreSQL service (AWS RDS, Google Cloud SQL)
+- Implement Redis for session storage
+- Set up load balancer for multiple web instances
+- Configure CDN for static assets
+- Monitor with APM tools (New Relic, DataDog)
+
+## Support and Maintenance
+
+### Regular Maintenance Tasks
+
+**Weekly:**
+- Check application logs for errors
+- Verify backup integrity
+- Monitor disk usage
+
+**Monthly:**
+- Update dependencies
+- Review security logs
+- Performance optimization review
+
+**Quarterly:**
+- Security audit
+- Database optimization
+- Disaster recovery testing
+
+### Getting Help
+
+For deployment issues:
+1. Check the troubleshooting section above
+2. Review application logs
+3. Verify environment configuration
+4. Test database connectivity
+
+The application is designed for reliable production deployment with comprehensive monitoring and recovery capabilities. 

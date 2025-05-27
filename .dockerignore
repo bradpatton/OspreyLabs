@@ -11,6 +11,8 @@ out
 # Environment files
 .env*
 !.env.example
+!env.template
+!env.production.template
 
 # Version control
 .git
@@ -26,8 +28,9 @@ out
 .DS_Store
 Thumbs.db
 
-# Logs
-logs
+# Logs (exclude from container, but keep structure)
+logs/*.json
+logs/*.log
 *.log
 
 # Test files
@@ -35,7 +38,21 @@ __tests__
 *.test.*
 *.spec.*
 
-# Docker files
-Dockerfile
+# Docker files (exclude compose files but keep Dockerfile)
 .dockerignore
-docker-compose*.yml 
+docker-compose*.yml
+
+# Database files (these are handled by volumes)
+database/data
+*.sql.backup
+
+# Secrets (handled by Docker secrets)
+secrets/
+
+# Documentation (not needed in production container)
+*.md
+!README.md
+
+# Development files
+.env.local
+.env.development 

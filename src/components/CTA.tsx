@@ -143,7 +143,7 @@ export default function CTA() {
               </motion.div>
             </div>
             
-            <div className="bg-white p-8 md:p-12">
+            <div className="bg-white p-8 md:p-12 lg:p-16">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
@@ -169,96 +169,103 @@ export default function CTA() {
                       </div>
                     )}
                     
-                    <div>
-                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                        Full Name
-                      </label>
-                      <input
-                        type="text"
-                        id="name"
-                        name="name"
-                        required
-                        className="input"
-                        placeholder="Your name"
-                        value={formState.name}
-                        onChange={handleChange}
-                      />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                          Full Name *
+                        </label>
+                        <input
+                          type="text"
+                          id="name"
+                          name="name"
+                          required
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200 text-gray-900 placeholder-gray-500"
+                          placeholder="Your full name"
+                          value={formState.name}
+                          onChange={handleChange}
+                        />
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                          Email Address *
+                        </label>
+                        <input
+                          type="email"
+                          id="email"
+                          name="email"
+                          required
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200 text-gray-900 placeholder-gray-500"
+                          placeholder="you@company.com"
+                          value={formState.email}
+                          onChange={handleChange}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                          Phone Number
+                        </label>
+                        <input
+                          type="tel"
+                          id="phone"
+                          name="phone"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200 text-gray-900 placeholder-gray-500"
+                          placeholder="(555) 123-4567"
+                          value={formState.phone}
+                          onChange={handleChange}
+                        />
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-2">
+                          Company Name
+                        </label>
+                        <input
+                          type="text"
+                          id="company"
+                          name="company"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200 text-gray-900 placeholder-gray-500"
+                          placeholder="Your company (optional)"
+                          value={formState.company}
+                          onChange={handleChange}
+                        />
+                      </div>
                     </div>
                     
                     <div>
-                      <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                        Email Address
-                      </label>
-                      <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        required
-                        className="input"
-                        placeholder="you@company.com"
-                        value={formState.email}
-                        onChange={handleChange}
-                      />
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                        Phone Number
-                      </label>
-                      <input
-                        type="tel"
-                        id="phone"
-                        name="phone"
-                        className="input"
-                        placeholder="Your phone number"
-                        value={formState.phone}
-                        onChange={handleChange}
-                      />
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-1">
-                        Company Name
-                      </label>
-                      <input
-                        type="text"
-                        id="company"
-                        name="company"
-                        className="input"
-                        placeholder="Your company (optional)"
-                        value={formState.company}
-                        onChange={handleChange}
-                      />
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="service" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label htmlFor="service" className="block text-sm font-medium text-gray-700 mb-2">
                         Interested In
                       </label>
                       <select
                         id="service"
                         name="service"
-                        className="input"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200 text-gray-900 bg-white"
                         value={formState.service}
                         onChange={handleChange}
                       >
-                        <option value="AI Automation">AI Automation</option>
+                        <option value="AI Automation">AI Solutions & Automation</option>
                         <option value="Custom Software">Custom Software Development</option>
+                        <option value="Business Process Automation">Business Process Automation</option>
                         <option value="Mobile App">Mobile App Development</option>
+                        <option value="Consulting">AI Strategy & Consulting</option>
                         <option value="Other">Other</option>
                       </select>
                     </div>
                     
                     <div>
-                      <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
-                        Message
+                      <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
+                        Message *
                       </label>
                       <textarea
                         id="message"
                         name="message"
-                        rows={4}
-                        className="input"
-                        placeholder="Tell us about your project or requirements"
+                        rows={5}
+                        required
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-200 text-gray-900 placeholder-gray-500 resize-vertical"
+                        placeholder="Tell us about your project, challenges, or requirements. The more details you provide, the better we can help you."
                         value={formState.message}
                         onChange={handleChange}
                       ></textarea>
@@ -266,21 +273,25 @@ export default function CTA() {
                     
                     <button
                       type="submit"
-                      className="w-full btn btn-primary py-3"
+                      className="w-full btn btn-primary py-4 text-lg font-semibold"
                       disabled={isSubmitting}
                     >
                       {isSubmitting ? (
                         <span className="flex items-center justify-center">
-                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                           </svg>
-                          Sending...
+                          Sending Message...
                         </span>
                       ) : (
                         'Send Message'
                       )}
                     </button>
+                    
+                    <p className="text-sm text-gray-500 text-center">
+                      We respect your privacy and will never share your information.
+                    </p>
                   </form>
                 )}
               </motion.div>

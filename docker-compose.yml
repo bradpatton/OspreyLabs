@@ -9,30 +9,62 @@ services:
       - "80:3000"
     environment:
       - NODE_ENV=production
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=osprey_labs
+      - DB_USER=osprey_user
+      - DB_PASSWORD=osprey_secure_password_2024
     secrets:
       - OPENAI_API_KEY
-      - OPENAI_ASSISTANT_ID
-      - ADMIN_API_KEY
+      - NEXTAUTH_SECRET
     volumes:
       - ./logs:/app/logs
     restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 60s
     networks:
-      - web
+      - app_network
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: osprey_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: osprey_labs
+      POSTGRES_USER: osprey_user
+      POSTGRES_PASSWORD: osprey_secure_password_2024
+      POSTGRES_HOST_AUTH_METHOD: md5
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U osprey_user -d osprey_labs"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  postgres_data:
+    driver: local
 
 networks:
-  web:
+  app_network:
     driver: bridge
 
 secrets:
   OPENAI_API_KEY:
     file: ./secrets/openai_api_key.txt
-  OPENAI_ASSISTANT_ID:
-    file: ./secrets/openai_assistant_id.txt
-  ADMIN_API_KEY:
-    file: ./secrets/admin_api_key.txt 
+  NEXTAUTH_SECRET:
+    file: ./secrets/nextauth_secret.txt 

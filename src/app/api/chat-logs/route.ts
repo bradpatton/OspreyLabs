@@ -1,188 +1,135 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs/promises';
-import path from 'path';
+import AuthService from '@/lib/auth';
+import ChatLogsService from '@/lib/services/chatLogs';
 
-// Define the log file path
-const LOG_DIR = path.join(process.cwd(), 'logs');
-const CHAT_LOG_FILE = path.join(LOG_DIR, 'chat-logs.json');
-
-// Ensure log directory exists
-async function ensureLogDir() {
-  try {
-    await fs.access(LOG_DIR);
-  } catch (error) {
-    await fs.mkdir(LOG_DIR, { recursive: true });
+// Helper function to verify admin authentication
+async function verifyAdminAuth(request: Request): Promise<{ isValid: boolean; user?: any }> {
+  const adminKey = request.headers.get('x-admin-key');
+  const sessionToken = request.headers.get('x-session-token');
+  
+  let user = null;
+  
+  if (sessionToken) {
+    const sessionData = await AuthService.validateSession(sessionToken);
+    if (sessionData) {
+      user = sessionData.user;
+    }
+  } else if (adminKey) {
+    user = await AuthService.validateApiKey(adminKey);
   }
+  
+  return { isValid: !!user, user };
 }
 
-// Interface for chat log entry
-interface ChatLogEntry {
-  threadId: string;
-  timestamp: string;
-  userMessage: string;
-  assistantResponse: string;
-  userAgent?: string;
-  ip?: string;
-}
-
-// Function to get existing logs
-async function getExistingLogs(): Promise<ChatLogEntry[]> {
+// GET - Fetch chat logs (admin only)
+export async function GET(request: Request) {
   try {
-    await ensureLogDir();
+    const { isValid } = await verifyAdminAuth(request);
     
-    try {
-      const data = await fs.readFile(CHAT_LOG_FILE, 'utf8');
-      return JSON.parse(data);
-    } catch (error) {
-      // File might not exist yet
-      return [];
+    if (!isValid) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const { searchParams } = new URL(request.url);
+    const threadId = searchParams.get('threadId');
+    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined;
+    const offset = searchParams.get('offset') ? parseInt(searchParams.get('offset')!) : 0;
+    const search = searchParams.get('search');
+    const grouped = searchParams.get('grouped') === 'true';
+
+    if (threadId) {
+      // Get logs for specific thread
+      const logs = await ChatLogsService.getChatLogsByThread(threadId);
+      return NextResponse.json(logs);
+    }
+
+    if (grouped) {
+      // Get logs grouped by thread
+      const threads = await ChatLogsService.getChatThreads({ limit, offset });
+      return NextResponse.json(threads);
+    }
+
+    let logs;
+
+    if (search) {
+      logs = await ChatLogsService.searchChatLogs(search, {
+        limit,
+        offset,
+      });
+    } else {
+      logs = await ChatLogsService.getAllChatLogs({
+        limit,
+        offset,
+      });
+    }
+
+    return NextResponse.json(logs);
   } catch (error) {
-    console.error('Error reading chat logs:', error);
-    return [];
+    console.error('Error fetching chat logs:', error);
+    return NextResponse.json({ error: 'Failed to fetch chat logs' }, { status: 500 });
   }
 }
 
-// Function to write logs
-async function writeLogs(logs: ChatLogEntry[]) {
-  try {
-    await ensureLogDir();
-    await fs.writeFile(CHAT_LOG_FILE, JSON.stringify(logs, null, 2), 'utf8');
-  } catch (error) {
-    console.error('Error writing chat logs:', error);
-  }
-}
-
-// Function to group logs by thread ID
-function groupLogsByThread(logs: ChatLogEntry[]) {
-  const threadMap: Record<string, ChatLogEntry[]> = {};
-  
-  // Group messages by threadId
-  logs.forEach(log => {
-    if (!threadMap[log.threadId]) {
-      threadMap[log.threadId] = [];
-    }
-    threadMap[log.threadId].push(log);
-  });
-  
-  // Sort messages within each thread by timestamp
-  Object.keys(threadMap).forEach(threadId => {
-    threadMap[threadId].sort((a, b) => 
-      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-    );
-  });
-  
-  return threadMap;
-}
-
-// Verify authentication
-function isAuthenticated(request: Request): boolean {
-  const authHeader = request.headers.get('authorization');
-  const apiKey = process.env.ADMIN_API_KEY;
-  
-  return !!apiKey && authHeader === `Bearer ${apiKey}`;
-}
-
-// POST endpoint to add a new log entry
+// POST - Create new chat log entry
 export async function POST(request: Request) {
   try {
-    const { threadId, userMessage, assistantResponse } = await request.json();
+    const body = await request.json();
+    const { threadId, userMessage, assistantResponse } = body;
     
+    // Validate required fields
     if (!threadId || !userMessage || !assistantResponse) {
       return NextResponse.json(
-        { error: 'threadId, userMessage, and assistantResponse are required' },
+        { error: 'Thread ID, user message, and assistant response are required' },
         { status: 400 }
       );
     }
-    
-    // Create log entry
-    const logEntry: ChatLogEntry = {
+
+    // Get client information
+    const userAgent = request.headers.get('user-agent') || undefined;
+    const forwarded = request.headers.get('x-forwarded-for');
+    const ipAddress = forwarded ? forwarded.split(',')[0] : 
+                     request.headers.get('x-real-ip') || 
+                     '127.0.0.1';
+
+    const chatLog = await ChatLogsService.createChatLog(
       threadId,
-      timestamp: new Date().toISOString(),
       userMessage,
       assistantResponse,
-      userAgent: request.headers.get('user-agent') || undefined,
-      ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined
-    };
-    
-    // Get existing logs and add new entry
-    const logs = await getExistingLogs();
-    logs.unshift(logEntry); // Add new entry to the beginning for newest-first ordering
-    
-    // Write updated logs
-    await writeLogs(logs);
-    
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error logging chat:', error);
-    return NextResponse.json(
-      { error: 'Failed to log chat' },
-      { status: 500 }
+      ipAddress,
+      userAgent
     );
+    
+    return NextResponse.json(chatLog, { status: 201 });
+  } catch (error) {
+    console.error('Error creating chat log:', error);
+    return NextResponse.json({ error: 'Failed to create chat log' }, { status: 500 });
   }
 }
 
-// GET endpoint to retrieve logs (protected for admin use)
-export async function GET(request: Request) {
-  // Check authentication
-  if (!isAuthenticated(request)) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401 }
-    );
-  }
-  
+// DELETE - Delete old chat logs (admin only)
+export async function DELETE(request: Request) {
   try {
-    const url = new URL(request.url);
-    const threadId = url.searchParams.get('threadId');
-    const format = url.searchParams.get('format') || 'raw'; // 'raw' or 'grouped'
-    const startDate = url.searchParams.get('startDate');
-    const endDate = url.searchParams.get('endDate');
+    const { isValid } = await verifyAdminAuth(request);
     
-    // Get logs
-    const logs = await getExistingLogs();
-    
-    // Apply filters
-    let filteredLogs = logs;
-    
-    // Filter by thread ID if provided
-    if (threadId) {
-      filteredLogs = filteredLogs.filter(log => log.threadId === threadId);
+    if (!isValid) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const { searchParams } = new URL(request.url);
+    const daysOld = searchParams.get('daysOld');
     
-    // Filter by date range if provided
-    if (startDate) {
-      const startTimestamp = new Date(startDate).getTime();
-      filteredLogs = filteredLogs.filter(log => 
-        new Date(log.timestamp).getTime() >= startTimestamp
-      );
+    if (!daysOld) {
+      return NextResponse.json({ error: 'daysOld parameter is required' }, { status: 400 });
     }
+
+    const deletedCount = await ChatLogsService.deleteOldChatLogs(parseInt(daysOld));
     
-    if (endDate) {
-      const endTimestamp = new Date(endDate).getTime();
-      filteredLogs = filteredLogs.filter(log => 
-        new Date(log.timestamp).getTime() <= endTimestamp
-      );
-    }
-    
-    // Return data in requested format
-    if (format === 'grouped') {
-      return NextResponse.json({ 
-        threads: groupLogsByThread(filteredLogs),
-        total: Object.keys(groupLogsByThread(filteredLogs)).length
-      });
-    }
-    
-    // Default raw format
     return NextResponse.json({ 
-      logs: filteredLogs,
-      total: filteredLogs.length
+      message: `Deleted ${deletedCount} chat logs older than ${daysOld} days`,
+      deletedCount 
     });
   } catch (error) {
-    console.error('Error retrieving chat logs:', error);
-    return NextResponse.json(
-      { error: 'Failed to retrieve chat logs' },
-      { status: 500 }
-    );
+    console.error('Error deleting old chat logs:', error);
+    return NextResponse.json({ error: 'Failed to delete chat logs' }, { status: 500 });
   }
 } 

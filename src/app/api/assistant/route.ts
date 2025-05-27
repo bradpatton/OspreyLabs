@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { ASSISTANT_PROMPT } from '@/utils/openai';
+import ChatLogsService from '@/lib/services/chatLogs';
 
 // Lazy initialization of OpenAI client
 function getOpenAIClient() {
@@ -148,6 +149,26 @@ export async function PUT(request: Request) {
               responseText += content.text.value;
             }
           }
+        }
+        
+        // Log the conversation to the database
+        try {
+          const userAgent = request.headers.get('user-agent') || undefined;
+          const forwarded = request.headers.get('x-forwarded-for');
+          const ipAddress = forwarded ? forwarded.split(',')[0] : 
+                           request.headers.get('x-real-ip') || 
+                           '127.0.0.1';
+
+          await ChatLogsService.createChatLog(
+            threadId,
+            message,
+            responseText,
+            ipAddress,
+            userAgent
+          );
+        } catch (logError) {
+          console.error('Error logging chat conversation:', logError);
+          // Don't fail the request if logging fails
         }
         
         return NextResponse.json({ response: responseText });
