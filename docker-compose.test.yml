@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   web:
     build:
@@ -8,13 +10,13 @@ services:
     environment:
       - NODE_ENV=production
       - DB_HOST=postgres
-      - DB_PORT=5432
+      - DB_PORT=5435
       - DB_NAME=osprey_labs
       - DB_USER=osprey_user
-      - DB_PASSWORD=${DB_PASSWORD}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
-      - NEXTAUTH_URL=${NEXTAUTH_URL}
+      - DB_PASSWORD=osprey_secure_password_2024
+    secrets:
+      - OPENAI_API_KEY
+      - NEXTAUTH_SECRET
     volumes:
       - ./logs:/app/logs
     restart: unless-stopped
@@ -28,24 +30,24 @@ services:
       retries: 3
       start_period: 60s
     networks:
-      - osprey_network
+      - app_network
 
   postgres:
     image: postgres:15-alpine
-    container_name: osprey_postgres_prod
+    container_name: osprey_postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: osprey_labs
       POSTGRES_USER: osprey_user
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_PASSWORD: osprey_secure_password_2024
       POSTGRES_HOST_AUTH_METHOD: md5
     ports:
-      - "5435:5432"
+      - "5434:5432"
     volumes:
-      - postgres_data_prod:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
       - ./database/init:/docker-entrypoint-initdb.d
     networks:
-      - osprey_network
+      - app_network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U osprey_user -d osprey_labs"]
       interval: 10s
@@ -54,9 +56,15 @@ services:
       start_period: 30s
 
 volumes:
-  postgres_data_prod:
+  postgres_data:
     driver: local
 
 networks:
-  osprey_network:
-    driver: bridge 
+  app_network:
+    driver: bridge
+
+secrets:
+  OPENAI_API_KEY:
+    file: ./secrets/openai_api_key.txt
+  NEXTAUTH_SECRET:
+    file: ./secrets/nextauth_secret.txt 
