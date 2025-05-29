@@ -6,8 +6,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci
+# Install dependencies including sharp for image optimization
+RUN npm ci && npm install sharp
 
 # Copy source code
 COPY . .
@@ -24,6 +24,9 @@ WORKDIR /app
 RUN apk add --no-cache \
     wget \
     postgresql-client
+
+# Install sharp for Next.js image optimization in production
+RUN npm install sharp
 
 # Set environment variables
 ENV NODE_ENV=production
